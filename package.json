@@ -1,0 +1,21 @@
+{
+  "name": "mediconnect-shared",
+  "private": true,
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=24.3.0"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-api.mjs",
+    "check:generated": "node scripts/generate-api.mjs && git diff --exit-code -- packages/api-client/src/generated",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "turbo": "2.11.12",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

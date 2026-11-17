@@ -1,0 +1,10 @@
+{
+  "name": "@mediconnect/configuration",
+  "version": "0.1.0",
+  "description": "Shared TypeScript configuration for MediConnect apps and packages",
+  "license": "UNLICENSED",
+  "files": ["tsconfig.base.json"],
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  }
+}
