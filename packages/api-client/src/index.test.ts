@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, createApiClient, newIdempotencyKey, unwrap } from './index.js';
+import { ApiError, createApiClient, ensureCsrfCookie, newIdempotencyKey, unwrap } from './index.js';
 
 function fakeFetch(status: number, body: unknown, seen: Request[] = []): typeof fetch {
   return async (input) => {
@@ -58,5 +58,30 @@ describe('newIdempotencyKey', () => {
     const a = newIdempotencyKey();
     expect(a).toMatch(/^[0-9a-f-]{36}$/);
     expect(newIdempotencyKey()).not.toBe(a);
+  });
+});
+
+describe('cookie (web) clients', () => {
+  it('sends X-XSRF-TOKEN from the cookie on writes only', async () => {
+    (globalThis as { document?: { cookie: string } }).document = { cookie: 'other=1; XSRF-TOKEN=abc%3D%3D' };
+    const seen: Request[] = [];
+    const client = createApiClient({ baseUrl: 'https://api.test/api/v1', csrf: true, fetch: fakeFetch(200, { success: true, data: {} }, seen) });
+
+    await client.POST('/auth/logout');
+    await client.GET('/health');
+
+    expect(seen[0]?.headers.get('X-XSRF-TOKEN')).toBe('abc==');
+    expect(seen[1]?.headers.has('X-XSRF-TOKEN')).toBe(false);
+    delete (globalThis as { document?: unknown }).document;
+  });
+
+  it('fetches the CSRF cookie from the API origin', async () => {
+    const urls: string[] = [];
+    await ensureCsrfCookie('https://api.test/api/v1', async (input) => {
+      urls.push(String(input));
+      return new Response(null, { status: 204 });
+    });
+
+    expect(urls).toEqual(['https://api.test/sanctum/csrf-cookie']);
   });
 });

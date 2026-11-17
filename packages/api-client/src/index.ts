@@ -43,6 +43,33 @@ export interface ApiClientOptions {
   /** Web clients keep the default "include" so the Sanctum session cookie is sent. */
   credentials?: RequestCredentials;
   fetch?: typeof globalThis.fetch;
+  /**
+   * Web (cookie) clients: send Laravel's X-XSRF-TOKEN header, read from the
+   * XSRF-TOKEN cookie, on every state-changing request. Call ensureCsrfCookie()
+   * once before the first one (e.g. before login).
+   */
+  csrf?: boolean;
+}
+
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const match = document.cookie.split('; ').find((c) => c.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
+}
+
+/**
+ * Fetches Sanctum's CSRF cookie for cookie (web) clients. baseUrl is the API
+ * base ("https://api.example/api/v1"); the cookie endpoint lives at the origin.
+ */
+export async function ensureCsrfCookie(baseUrl: string, fetchImpl: typeof globalThis.fetch = globalThis.fetch): Promise<void> {
+  const response = await fetchImpl(new URL('/sanctum/csrf-cookie', baseUrl).toString(), { credentials: 'include' });
+  if (!response.ok) {
+    throw new ApiError(response.status, { message: 'Could not start a secure session.' });
+  }
 }
 
 export type ApiClient = Client<paths>;
@@ -55,7 +82,19 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     ...(options.fetch ? { fetch: options.fetch } : {}),
   });
 
-  const { getAccessToken } = options;
+  const { getAccessToken, csrf } = options;
+
+  if (csrf) {
+    client.use({
+      onRequest({ request }) {
+        const token = UNSAFE_METHODS.has(request.method) ? readCookie('XSRF-TOKEN') : null;
+        if (token) {
+          request.headers.set('X-XSRF-TOKEN', token);
+        }
+        return request;
+      },
+    });
+  }
 
   if (getAccessToken) {
     client.use({
