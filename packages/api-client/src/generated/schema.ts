@@ -317,6 +317,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountResource */
+        AccountResource: {
+            id: string;
+            email: string | null;
+            mobile_masked: string | null;
+            email_verified: boolean;
+            mobile_verified: boolean;
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
+            locale: string;
+            roles: {
+                relations: [
+                    "roles"
+                ];
+            }[];
+            profile: {
+                first_name: string;
+                middle_name: string | null;
+                last_name: string;
+            } | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Format: email */
@@ -935,7 +956,7 @@ export interface operations {
                     "application/json": {
                         success: boolean;
                         data: {
-                            user: unknown[] | unknown;
+                            user: components["schemas"]["AccountResource"] | unknown;
                         } & {
                             [key: string]: unknown;
                         };
@@ -980,7 +1001,7 @@ export interface operations {
                     "application/json": {
                         success: boolean;
                         data: {
-                            user: unknown[];
+                            user: components["schemas"]["AccountResource"];
                             device_id: string;
                             mfa: {
                                 setup_required: boolean;
@@ -1045,7 +1066,7 @@ export interface operations {
                     "application/json": {
                         success: boolean;
                         data: {
-                            user: unknown[];
+                            user: components["schemas"]["AccountResource"];
                             device_id: string;
                             mfa: {
                                 setup_required: boolean;
@@ -1175,7 +1196,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: unknown[];
+                        data: components["schemas"]["AccountResource"];
                         meta: string;
                         message: null;
                     };

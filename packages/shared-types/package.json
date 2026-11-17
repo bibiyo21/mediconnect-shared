@@ -24,5 +24,13 @@
   },
   "dependencies": {
     "@mediconnect/api-client": "workspace:*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bibiyo21/mediconnect-shared.git",
+    "directory": "packages/shared-types"
   }
 }

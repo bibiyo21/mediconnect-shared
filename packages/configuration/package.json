@@ -3,8 +3,18 @@
   "version": "0.1.0",
   "description": "Shared TypeScript configuration for MediConnect apps and packages",
   "license": "UNLICENSED",
-  "files": ["tsconfig.base.json"],
+  "files": [
+    "tsconfig.base.json"
+  ],
   "exports": {
     "./tsconfig.base.json": "./tsconfig.base.json"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bibiyo21/mediconnect-shared.git",
+    "directory": "packages/configuration"
   }
 }
