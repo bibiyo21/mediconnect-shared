@@ -153,6 +153,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/patients/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myPatientProfile.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["myPatientProfile.update"];
+        trace?: never;
+    };
     "/auth/otp": {
         parameters: {
             query?: never;
@@ -362,6 +378,31 @@ export interface components {
             code?: string | null;
             recovery_code?: string | null;
         };
+        /** MyPatientProfileResource */
+        MyPatientProfileResource: {
+            id: string;
+            first_name: string;
+            middle_name: string | null;
+            last_name: string;
+            date_of_birth: string | null;
+            /** @enum {string|null} */
+            sex: "FEMALE" | "MALE" | "OTHER" | "UNKNOWN" | null;
+            /** @enum {string} */
+            preferred_language: "en" | "fil";
+            emergency_contact: {
+                name: string;
+                phone: string;
+            } | null;
+            address: {
+                line1: string;
+                line2: string | null;
+                barangay: string | null;
+                city: string;
+                province: string | null;
+                postal_code: string | null;
+                country_code: string;
+            } | null;
+        };
         /**
          * OtpPurpose
          * @enum {string}
@@ -381,8 +422,11 @@ export interface components {
             first_name: string;
             middle_name?: string | null;
             last_name: string;
-            /** Format: date-time */
-            date_of_birth?: string | null;
+            /**
+             * Format: date
+             * @description D-37: account holders must be adults (minors are dependents).
+             */
+            date_of_birth: string;
             sex?: components["schemas"]["Sex"] | null;
             /**
              * @description The client must show and send the versions it displayed; stale apps are refused.
@@ -421,6 +465,32 @@ export interface components {
          * @enum {string}
          */
         Sex: "FEMALE" | "MALE" | "OTHER" | "UNKNOWN";
+        /**
+         * UpdateMyPatientProfileRequest
+         * @description PATCH /patients/me: only the fields sent are changed.
+         */
+        UpdateMyPatientProfileRequest: {
+            first_name?: string;
+            middle_name?: string | null;
+            last_name?: string;
+            /** Format: date */
+            date_of_birth?: string;
+            sex?: components["schemas"]["Sex"] | null;
+            /** @enum {string} */
+            preferred_language?: "en" | "fil";
+            emergency_contact?: {
+                name?: string;
+                phone?: string;
+            };
+            address?: {
+                line1?: string;
+                line2?: string | null;
+                barangay?: string | null;
+                city?: string;
+                province?: string | null;
+                postal_code?: string | null;
+            };
+        };
         /** VerificationTokenRequest */
         VerificationTokenRequest: {
             verification_token: string;
@@ -433,6 +503,30 @@ export interface components {
         };
     };
     responses: {
+        /** @description Authorization error */
+        AuthorizationException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
+        /** @description Unauthenticated */
+        AuthenticationException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
         /** @description Validation error */
         ValidationException: {
             headers: {
@@ -446,18 +540,6 @@ export interface components {
                     errors: {
                         [key: string]: string[];
                     };
-                };
-            };
-        };
-        /** @description Unauthenticated */
-        AuthenticationException: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    /** @description Error overview. */
-                    message: string;
                 };
             };
         };
@@ -747,6 +829,63 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "myPatientProfile.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["MyPatientProfileResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "myPatientProfile.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateMyPatientProfileRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["MyPatientProfileResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "otp.request": {
