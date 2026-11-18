@@ -119,13 +119,16 @@ export function newIdempotencyKey(): string {
   return globalThis.crypto.randomUUID();
 }
 
+/** The envelope's `data` type, distributed over responses that are unions of envelopes. */
+export type EnvelopeData<D> = D extends { data?: infer T } ? T : never;
+
 /**
  * Returns the envelope's `data` on success, throws ApiError otherwise.
  */
-export function unwrap<T>(result: { data?: { data?: T } | undefined; error?: unknown; response: Response }): T {
+export function unwrap<R extends { data?: unknown; error?: unknown; response: Response }>(result: R): EnvelopeData<NonNullable<R['data']>> {
   if (result.error !== undefined || !result.response.ok) {
     throw new ApiError(result.response.status, result.error as Partial<ApiErrorBody> | undefined);
   }
 
-  return result.data?.data as T;
+  return (result.data as { data?: unknown } | undefined)?.data as EnvelopeData<NonNullable<R['data']>>;
 }

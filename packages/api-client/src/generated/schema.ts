@@ -327,11 +327,7 @@ export interface components {
             /** @enum {string} */
             status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
             locale: string;
-            roles: {
-                relations: [
-                    "roles"
-                ];
-            }[];
+            roles: string[];
             profile: {
                 first_name: string;
                 middle_name: string | null;
