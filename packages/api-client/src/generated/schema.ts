@@ -5,6 +5,22 @@
  */
 
 export interface paths {
+    "/auth/account/deletion-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["authentication.accountDeletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/contact/otp": {
         parameters: {
             query?: never;
@@ -397,6 +413,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AccountDeletionRequest
+         * @description POST /auth/account/deletion-request: the current password confirms it is the account holder.
+         */
+        AccountDeletionRequest: {
+            current_password: string;
+        };
         /** AccountResource */
         AccountResource: {
             id: string;
@@ -711,6 +734,51 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "authentication.accountDeletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountDeletionRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            deletion_scheduled_for: string;
+                        };
+                        meta: string;
+                        /** @constant */
+                        message: "Your account is scheduled for deletion. Sign in before then to keep it.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "contactChange.requestCode": {
         parameters: {
             query?: never;
