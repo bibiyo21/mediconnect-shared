@@ -69,6 +69,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/patients/me/dependents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dependents.index"];
+        put?: never;
+        post: operations["dependents.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patients/me/dependents/{dependentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dependents.show"];
+        put?: never;
+        post?: never;
+        delete: operations["dependents.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["dependents.update"];
+        trace?: never;
+    };
     "/auth/devices": {
         parameters: {
             query?: never;
@@ -392,6 +424,36 @@ export interface components {
             mobile?: string | null;
             verification_token: string;
         };
+        /**
+         * DependentRelationship
+         * @description How the dependent is related to the guardian (from the guardian's side: "my CHILD").
+         * @enum {string}
+         */
+        DependentRelationship: "CHILD" | "PARENT" | "SPOUSE" | "SIBLING" | "GRANDPARENT" | "GRANDCHILD" | "LEGAL_WARD" | "OTHER";
+        /** DependentResource */
+        DependentResource: {
+            id: string;
+            first_name: string;
+            middle_name: string | null;
+            last_name: string;
+            date_of_birth: string | null;
+            /** @enum {string|null} */
+            sex: "FEMALE" | "MALE" | "OTHER" | "UNKNOWN" | null;
+            /** @enum {string} */
+            relationship: "CHILD" | "PARENT" | "SPOUSE" | "SIBLING" | "GRANDPARENT" | "GRANDCHILD" | "LEGAL_WARD" | "OTHER";
+            authorized_at: string | null;
+        };
+        /** DeviceResource */
+        DeviceResource: {
+            id: string;
+            /** @enum {string} */
+            platform: "IOS" | "ANDROID" | "WEB";
+            device_name: string | null;
+            app_version: string | null;
+            last_seen_at: string | null;
+            created_at: string | null;
+            current: boolean;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Format: email */
@@ -513,6 +575,42 @@ export interface components {
          * @enum {string}
          */
         Sex: "FEMALE" | "MALE" | "OTHER" | "UNKNOWN";
+        /**
+         * StoreDependentRequest
+         * @description POST /patients/me/dependents.
+         */
+        StoreDependentRequest: {
+            first_name: string;
+            middle_name?: string | null;
+            last_name: string;
+            /** Format: date */
+            date_of_birth: string;
+            sex?: components["schemas"]["Sex"] | null;
+            relationship: components["schemas"]["DependentRelationship"];
+            /**
+             * @description The guardian confirms they are authorised to manage this person's health information.
+             * @enum {unknown}
+             */
+            guardian_attestation: "yes" | "on" | "1" | 1 | "true" | true;
+            /**
+             * @description The attestation version the app displayed; stale apps are refused.
+             * @enum {string}
+             */
+            guardian_attestation_version: "draft-2026-11";
+        };
+        /**
+         * UpdateDependentRequest
+         * @description PATCH /patients/me/dependents/{id}: only the fields sent change.
+         */
+        UpdateDependentRequest: {
+            first_name?: string;
+            middle_name?: string | null;
+            last_name?: string;
+            /** Format: date */
+            date_of_birth?: string;
+            sex?: components["schemas"]["Sex"] | null;
+            relationship?: components["schemas"]["DependentRelationship"];
+        };
         /**
          * UpdateMyPatientProfileRequest
          * @description PATCH /patients/me: only the fields sent are changed.
@@ -767,6 +865,149 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "dependents.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DependentResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "dependents.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreDependentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DependentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "dependents.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dependentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DependentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "dependents.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dependentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string;
+                        /** @constant */
+                        message: "The family member was removed from your account. Their records are kept.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "dependents.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dependentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateDependentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DependentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "device.index": {
         parameters: {
             query?: never;
@@ -783,7 +1024,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: unknown[];
+                        data: components["schemas"]["DeviceResource"][];
                         meta: string;
                         message: null;
                     };
