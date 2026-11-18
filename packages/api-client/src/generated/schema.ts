@@ -5,6 +5,38 @@
  */
 
 export interface paths {
+    "/auth/contact/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["contactChange.requestCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["contactChange.confirm"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/verify-email": {
         parameters: {
             query?: never;
@@ -350,6 +382,16 @@ export interface components {
                 last_name: string;
             } | null;
         };
+        /**
+         * ConfirmContactChangeRequest
+         * @description PUT /auth/contact: the new email or mobile and the token from POST /auth/otp/verify.
+         */
+        ConfirmContactChangeRequest: {
+            /** Format: email */
+            email?: string | null;
+            mobile?: string | null;
+            verification_token: string;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Format: email */
@@ -403,11 +445,6 @@ export interface components {
                 country_code: string;
             } | null;
         };
-        /**
-         * OtpPurpose
-         * @enum {string}
-         */
-        OtpPurpose: "REGISTER" | "VERIFY_EMAIL" | "VERIFY_MOBILE" | "RESET_PASSWORD";
         /** RefreshRequest */
         RefreshRequest: {
             refresh_token: string;
@@ -443,9 +480,20 @@ export interface components {
             } | null;
             password_confirmation: string;
         };
+        /**
+         * RequestContactChangeCodeRequest
+         * @description POST /auth/contact/otp: the new email or mobile, and the current password.
+         */
+        RequestContactChangeCodeRequest: {
+            /** Format: email */
+            email?: string | null;
+            mobile?: string | null;
+            current_password: string;
+        };
         /** RequestOtpRequest */
         RequestOtpRequest: {
-            purpose: components["schemas"]["OtpPurpose"];
+            /** @enum {string} */
+            purpose: "REGISTER" | "VERIFY_EMAIL" | "VERIFY_MOBILE" | "RESET_PASSWORD";
             /** Format: email */
             email?: string | null;
             mobile?: string | null;
@@ -565,6 +613,98 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "contactChange.requestCode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestContactChangeCodeRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            challenge_id: string;
+                            /** @enum {string} */
+                            channel: "EMAIL" | "SMS";
+                            destination_masked: string;
+                            expires_at: string;
+                        };
+                        meta: string;
+                        /** @constant */
+                        message: "If the address can receive a code, one has been sent.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "contactChange.confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmContactChangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AccountResource"];
+                        meta: string;
+                        /** @constant */
+                        message: "Your contact details were updated.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "contactVerification.email": {
         parameters: {
             query?: never;
