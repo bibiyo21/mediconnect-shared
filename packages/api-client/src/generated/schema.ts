@@ -478,18 +478,20 @@ export interface components {
             sex?: components["schemas"]["Sex"] | null;
             /** @enum {string} */
             preferred_language?: "en" | "fil";
+            /** @description Null removes the emergency contact. */
             emergency_contact?: {
-                name?: string;
-                phone?: string;
-            };
+                name: string;
+                phone: string;
+            } | null;
+            /** @description Null removes the primary address. */
             address?: {
-                line1?: string;
+                line1: string;
                 line2?: string | null;
                 barangay?: string | null;
-                city?: string;
+                city: string;
                 province?: string | null;
                 postal_code?: string | null;
-            };
+            } | null;
         };
         /** VerificationTokenRequest */
         VerificationTokenRequest: {
