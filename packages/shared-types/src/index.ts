@@ -6,7 +6,8 @@ import type { components } from '@mediconnect/api-client';
 type Schemas = components['schemas'];
 
 export type Sex = Schemas['Sex'];
-export type OtpPurpose = Schemas['OtpPurpose'];
+/** Purposes a client may request from POST /auth/otp (contact changes use POST /auth/contact/otp). */
+export type OtpPurpose = Schemas['RequestOtpRequest']['purpose'];
 
 export type LoginRequest = Schemas['LoginRequest'];
 export type RegisterRequest = Schemas['RegisterRequest'];
