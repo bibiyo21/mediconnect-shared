@@ -214,6 +214,9 @@ importers:
       '@mediconnect/configuration':
         specifier: workspace:*
         version: link:../configuration
+      vitest:
+        specifier: 5.1.0
+        version: 5.1.0(vite@8.3.8)
 
   packages/shared-types:
     dependencies:

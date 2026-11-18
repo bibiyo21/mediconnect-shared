@@ -1,7 +1,7 @@
 {
   "name": "@mediconnect/design-system",
   "version": "0.1.0",
-  "description": "MediConnect design tokens and cross-platform primitives (from increment 9)",
+  "description": "MediConnect design tokens (single source of truth) with CSS and React Native adapters",
   "license": "UNLICENSED",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,17 +10,27 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./tokens.css": {
+      "style": "./dist/tokens.css",
+      "default": "./dist/tokens.css"
+    },
+    "./base.css": {
+      "style": "./dist/base.css",
+      "default": "./dist/base.css"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "build": "tsc -p tsconfig.json && node scripts/build-css.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@mediconnect/configuration": "workspace:*"
+    "@mediconnect/configuration": "workspace:*",
+    "vitest": "5.1.0"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
