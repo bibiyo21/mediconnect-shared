@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t"><title id="t">Health support</title>
+  <path d="M19 21a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4h-1v6l-7-6h-8a4 4 0 0 1-4-4z" fill="#1E6FD9" stroke="#0E3A66" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M5 9a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H15l-7 6v-6H9a4 4 0 0 1-4-4z" fill="#14A38F" stroke="#0E3A66" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M11 13h15M11 18.5h10" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round"/>
+</svg>
