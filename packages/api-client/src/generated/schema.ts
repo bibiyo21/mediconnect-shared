@@ -1442,6 +1442,7 @@ export interface components {
                 update: boolean;
                 manage_hours: boolean;
                 manage_staff: boolean;
+                manage_doctors: boolean;
             };
         };
         /** ClinicSummaryResource */
