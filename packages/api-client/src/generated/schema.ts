@@ -21,6 +21,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/clinics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminClinics.index"];
+        put?: never;
+        post: operations["adminClinics.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/overview": {
         parameters: {
             query?: never;
@@ -224,6 +240,199 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/holidays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clinicHolidays.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/holidays/{holidayId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["clinicHolidays.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clinicLocations.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/locations/{locationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["clinicLocations.update"];
+        trace?: never;
+    };
+    "/clinics/{clinicId}/locations/{locationId}/operating-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the weekly hours of one location atomically */
+        put: operations["clinicLocations.replaceHours"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/locations/{locationId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clinicLocations.storeService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/locations/{locationId}/services/{serviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["clinicLocations.updateService"];
+        trace?: never;
+    };
+    "/me/clinics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["clinicManagement.mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/management": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["clinicManagement.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["clinicManagement.update"];
+        trace?: never;
+    };
+    "/clinics/{clinicId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clinicMembers.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["clinicMembers.destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -661,6 +870,22 @@ export interface components {
                 last_name: string;
             } | null;
         };
+        /**
+         * AddMemberRequest
+         * @description POST /clinics/{id}/members: an existing MediConnect account, by email or mobile.
+         */
+        AddMemberRequest: {
+            /** Format: email */
+            email?: string | null;
+            mobile?: string | null;
+            /** @enum {string} */
+            member_role: "CLINIC_MANAGER" | "CLINIC_STAFF";
+            /**
+             * Format: uuid
+             * @description Null = every location of the clinic.
+             */
+            clinic_location_id?: string | null;
+        };
         /** AdminSpecialtyResource */
         AdminSpecialtyResource: {
             id: string;
@@ -692,6 +917,86 @@ export interface components {
             last_login_at: string | null;
             created_at: string | null;
         };
+        /** ClinicManagementResource */
+        ClinicManagementResource: {
+            id: string;
+            name: string;
+            slug: string;
+            description: string | null;
+            status: string;
+            organization: {
+                id: string;
+                name: string;
+                legal_name: string | null;
+                organization_type: string;
+            };
+            locations: {
+                id: string;
+                name: string;
+                address_line1: string;
+                address_line2: string | null;
+                barangay: string | null;
+                city: string;
+                province: string | null;
+                postal_code: string | null;
+                latitude: number | null;
+                longitude: number | null;
+                timezone: string;
+                phone: string | null;
+                hospital_name: string | null;
+                status: string;
+                operating_hours: {
+                    day_of_week: number;
+                    opens_at: string;
+                    closes_at: string;
+                }[];
+                services: {
+                    id: string;
+                    name: string;
+                    description: string | null;
+                    default_duration_minutes: number | null;
+                    status: string;
+                }[];
+            }[];
+            holidays: {
+                id: string;
+                clinic_location_id: string | null;
+                date: string;
+                name: string;
+                is_closed: boolean;
+                special_opens_at: string | null;
+                special_closes_at: string | null;
+            }[];
+            members: {
+                id: string;
+                user_id: string;
+                name: string | null;
+                email: string | null;
+                mobile_masked: string | null;
+                member_role: string;
+                clinic_location_id: string | null;
+                joined_at: string | null;
+            }[];
+            abilities: {
+                update: boolean;
+                manage_hours: boolean;
+                manage_staff: boolean;
+            };
+        };
+        /** ClinicSummaryResource */
+        ClinicSummaryResource: {
+            id: string;
+            name: string;
+            slug: string;
+            status: string;
+            organization: {
+                id: string;
+                name: string;
+                organization_type: string;
+            };
+            location_count: number;
+            cities: unknown[];
+        };
         /**
          * ConfirmContactChangeRequest
          * @description PUT /auth/contact: the new email or mobile and the token from POST /auth/otp/verify.
@@ -701,6 +1006,88 @@ export interface components {
             email?: string | null;
             mobile?: string | null;
             verification_token: string;
+        };
+        /**
+         * CreateClinicRequest
+         * @description POST /admin/clinics: a clinic in an existing or new organization, optionally with its first location.
+         */
+        CreateClinicRequest: {
+            /** Format: uuid */
+            organization_id?: string | null;
+            organization?: {
+                name?: string;
+                legal_name?: string | null;
+                /** @enum {string} */
+                organization_type?: "CLINIC_GROUP" | "HOSPITAL" | "SOLO_PRACTICE";
+            };
+            name: string;
+            description?: string | null;
+            location: {
+                name: string;
+                address_line1: string;
+                address_line2?: string | null;
+                barangay?: string | null;
+                city: string;
+                province?: string | null;
+                postal_code?: string | null;
+                /** @description No `sometimes`: sending one coordinate without the other must fail validation. */
+                latitude?: number | null;
+                longitude?: number | null;
+                timezone?: string;
+                phone?: string | null;
+                hospital_name?: string | null;
+                /** @enum {string} */
+                status?: "ACTIVE" | "INACTIVE";
+            };
+        };
+        /**
+         * CreateClinicServiceRequest
+         * @description POST /clinics/{id}/locations/{locationId}/services.
+         */
+        CreateClinicServiceRequest: {
+            name: string;
+            description?: string | null;
+            default_duration_minutes?: number | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+        };
+        /**
+         * CreateHolidayRequest
+         * @description POST /clinics/{id}/holidays: a closure or special hours on one date.
+         */
+        CreateHolidayRequest: {
+            /**
+             * Format: uuid
+             * @description Null applies to every location of the clinic.
+             */
+            clinic_location_id?: string | null;
+            /** Format: date */
+            date: string;
+            name: string;
+            is_closed: boolean;
+            special_opens_at: string;
+            special_closes_at: string;
+        };
+        /**
+         * CreateLocationRequest
+         * @description POST /clinics/{id}/locations.
+         */
+        CreateLocationRequest: {
+            name: string;
+            address_line1: string;
+            address_line2?: string | null;
+            barangay?: string | null;
+            city: string;
+            province?: string | null;
+            postal_code?: string | null;
+            /** @description No `sometimes`: sending one coordinate without the other must fail validation. */
+            latitude?: number | null;
+            longitude?: number | null;
+            timezone?: string;
+            phone?: string | null;
+            hospital_name?: string | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
         };
         /**
          * CreateSpecialtyRequest
@@ -838,6 +1225,18 @@ export interface components {
             password_confirmation: string;
         };
         /**
+         * ReplaceHoursRequest
+         * @description PUT /clinics/{id}/locations/{locationId}/operating-hours: the complete weekly set.
+         */
+        ReplaceHoursRequest: {
+            hours: {
+                /** @description 1 = Monday … 7 = Sunday */
+                day_of_week: number;
+                opens_at: string;
+                closes_at: string;
+            }[];
+        };
+        /**
          * RequestContactChangeCodeRequest
          * @description POST /auth/contact/otp: the new email or mobile, and the current password.
          */
@@ -907,6 +1306,27 @@ export interface components {
             reason: string;
         };
         /**
+         * UpdateClinicRequest
+         * @description PATCH /clinics/{id}: only the fields sent change.
+         */
+        UpdateClinicRequest: {
+            name?: string;
+            description?: string | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+        };
+        /**
+         * UpdateClinicServiceRequest
+         * @description PATCH /clinics/{id}/locations/{locationId}/services/{serviceId}: only the fields sent change.
+         */
+        UpdateClinicServiceRequest: {
+            name?: string;
+            description?: string | null;
+            default_duration_minutes?: number | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+        };
+        /**
          * UpdateDependentRequest
          * @description PATCH /patients/me/dependents/{id}: only the fields sent change.
          */
@@ -918,6 +1338,27 @@ export interface components {
             date_of_birth?: string;
             sex?: components["schemas"]["Sex"] | null;
             relationship?: components["schemas"]["DependentRelationship"];
+        };
+        /**
+         * UpdateLocationRequest
+         * @description PATCH /clinics/{id}/locations/{locationId}: only the fields sent change.
+         */
+        UpdateLocationRequest: {
+            name?: string;
+            address_line1?: string;
+            address_line2?: string | null;
+            barangay?: string | null;
+            city?: string;
+            province?: string | null;
+            postal_code?: string | null;
+            /** @description No `sometimes`: sending one coordinate without the other must fail validation. */
+            latitude?: number | null;
+            longitude?: number | null;
+            timezone?: string;
+            phone?: string | null;
+            hospital_name?: string | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
         };
         /**
          * UpdateMyPatientProfileRequest
@@ -1102,6 +1543,74 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "adminClinics.index": {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                "filter[search]"?: string;
+                "filter[status]"?: "ACTIVE" | "INACTIVE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicSummaryResource"][];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminClinics.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClinicRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "administration.adminOverview": {
@@ -1588,6 +2097,383 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicHolidays.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHolidayRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicHolidays.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                holidayId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "clinicLocations.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLocationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicLocations.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicLocations.replaceHours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceHoursRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicLocations.storeService": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                locationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClinicServiceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicLocations.updateService": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                locationId: string;
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateClinicServiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicManagement.mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicSummaryResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "clinicManagement.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "clinicManagement.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateClinicRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicMembers.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddMemberRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicMembers.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "contactChange.requestCode": {
