@@ -942,7 +942,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/doctors/me/submit": {
+    "/doctors/me/submit-for-review": {
         parameters: {
             query?: never;
             header?: never;
