@@ -21,6 +21,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["administration.adminOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminSettings.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/settings/{settingKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["adminSettings.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminUsers.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminUsers.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminUsers.suspend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminUsers.reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["adminUsers.updateRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["audit.auditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/contact/otp": {
         parameters: {
             query?: never;
@@ -437,6 +581,21 @@ export interface components {
                 last_name: string;
             } | null;
         };
+        /** AdminUserResource */
+        AdminUserResource: {
+            id: string;
+            email: string | null;
+            mobile_masked: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
+            roles: string[];
+            first_name: string | null;
+            last_name: string | null;
+            mfa_enrolled: boolean;
+            deletion_requested_at: string | null;
+            last_login_at: string | null;
+            created_at: string | null;
+        };
         /**
          * ConfirmContactChangeRequest
          * @description PUT /auth/contact: the new email or mobile and the token from POST /auth/otp/verify.
@@ -593,6 +752,12 @@ export interface components {
             password_confirmation: string;
         };
         /**
+         * Role
+         * @description Platform roles (CLAUDE.md §20.1). Roles are global labels; which clinics a clinic role applies to is held in clinic_members (D-17), not in Spatie teams.
+         * @enum {string}
+         */
+        Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
+        /**
          * Sex
          * @description Sex where clinically required (§4.3). Values follow the HL7 administrative gender set. Optional everywhere it is collected.
          * @enum {string}
@@ -620,6 +785,13 @@ export interface components {
              * @enum {string}
              */
             guardian_attestation_version: "draft-2026-11";
+        };
+        /**
+         * SuspendUserRequest
+         * @description Suspend or reactivate: sensitive, so a reason is required (rbac-permissions.md §7).
+         */
+        SuspendUserRequest: {
+            reason: string;
         };
         /**
          * UpdateDependentRequest
@@ -662,6 +834,27 @@ export interface components {
                 postal_code?: string | null;
             } | null;
         };
+        /**
+         * UpdateSettingRequest
+         * @description PUT /admin/settings/{key}: any JSON value except null, and a reason.
+         */
+        UpdateSettingRequest: {
+            value: string;
+            reason: string;
+        };
+        /**
+         * UpdateUserRolesRequest
+         * @description PUT /admin/users/{id}/roles: the complete set of roles the user should hold, and why.
+         */
+        UpdateUserRolesRequest: {
+            roles: components["schemas"]["Role"][];
+            reason: string;
+        };
+        /**
+         * UserStatus
+         * @enum {string}
+         */
+        UserStatus: "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
         /** VerificationTokenRequest */
         VerificationTokenRequest: {
             verification_token: string;
@@ -674,6 +867,22 @@ export interface components {
         };
     };
     responses: {
+        /** @description Validation error */
+        ValidationException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Errors overview. */
+                    message: string;
+                    /** @description A detailed description of each field that failed validation. */
+                    errors: {
+                        [key: string]: string[];
+                    };
+                };
+            };
+        };
         /** @description Authorization error */
         AuthorizationException: {
             headers: {
@@ -695,22 +904,6 @@ export interface components {
                 "application/json": {
                     /** @description Error overview. */
                     message: string;
-                };
-            };
-        };
-        /** @description Validation error */
-        ValidationException: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    /** @description Errors overview. */
-                    message: string;
-                    /** @description A detailed description of each field that failed validation. */
-                    errors: {
-                        [key: string]: string[];
-                    };
                 };
             };
         };
@@ -777,6 +970,335 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "administration.adminOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            users: {
+                                total: number;
+                                active: number;
+                                suspended: number;
+                                pending_deletion: number;
+                            };
+                            patients: number;
+                            dependents: number;
+                            security_events_24h: number;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSettings.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            key: string;
+                            value: unknown;
+                            updated_by: string;
+                            updated_at: string | null;
+                        }[];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSettings.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                settingKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSettingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            key: string;
+                            value: string;
+                        };
+                        meta: string;
+                        /** @constant */
+                        message: "Setting saved.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminUsers.index": {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                /** @description Matches the start of the email, or the last digits of the mobile number. */
+                "filter[search]"?: string;
+                "filter[status]"?: components["schemas"]["UserStatus"];
+                "filter[role]"?: components["schemas"]["Role"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminUserResource"][];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminUsers.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminUserResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "adminUsers.suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendUserRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminUserResource"];
+                        meta: string;
+                        /** @constant */
+                        message: "The account was suspended and signed out everywhere.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminUsers.reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendUserRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminUserResource"];
+                        meta: string;
+                        /** @constant */
+                        message: "The account was reactivated.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminUsers.updateRoles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRolesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminUserResource"];
+                        meta: string;
+                        /** @constant */
+                        message: "Roles updated.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "audit.auditLog": {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                "filter[action]"?: string;
+                "filter[actor_user_id]"?: string;
+                "filter[subject_type]"?: string;
+                "filter[subject_id]"?: string;
+                "filter[from]"?: string;
+                "filter[to]"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            id: number;
+                            occurred_at: string;
+                            actor_user_id: string;
+                            actor_roles: string;
+                            action: string;
+                            subject_type: string;
+                            subject_id: string;
+                            changes: unknown;
+                            is_access_event: boolean;
+                            request_id: string;
+                        }[];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "contactChange.requestCode": {
