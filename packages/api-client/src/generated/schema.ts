@@ -1982,7 +1982,7 @@ export interface components {
                 board_certified: boolean;
             }[];
             /** @description ISO 639 codes */
-            languages: unknown[];
+            languages: string[];
             years_experience: number | null;
             practice_locations: {
                 clinic_id: string;
@@ -2015,7 +2015,7 @@ export interface components {
                 board_certified: boolean;
             }[];
             /** @description ISO 639 codes */
-            languages: unknown[];
+            languages: string[];
             years_experience: number | null;
             practice_locations: {
                 clinic_id: string;
