@@ -1493,10 +1493,10 @@ export interface components {
         };
         /**
          * DoctorDecisionRequest
-         * @description Verify or activate: step-up on the route; the reason is optional and audited.
+         * @description Verify or activate: step-up on the route and a reason, as for every step-up action (rbac-permissions.md §7).
          */
         DoctorDecisionRequest: {
-            reason?: string | null;
+            reason: string;
         };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
@@ -2323,7 +2323,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["DoctorDecisionRequest"];
             };
@@ -2356,7 +2356,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["DoctorDecisionRequest"];
             };
