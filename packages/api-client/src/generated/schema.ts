@@ -1891,8 +1891,8 @@ export interface components {
          * @enum {string}
          */
         OnboardingStatus: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
-        /** PublicClinicResource */
-        PublicClinicResource: {
+        /** PublicClinicDetailResource */
+        PublicClinicDetailResource: {
             id: string;
             name: string;
             slug: string;
@@ -1933,8 +1933,42 @@ export interface components {
                 special_closes_at: string | null;
             }[];
         };
-        /** PublicDoctorResource */
-        PublicDoctorResource: {
+        /** PublicClinicResource */
+        PublicClinicResource: {
+            id: string;
+            name: string;
+            slug: string;
+            description: string | null;
+            organization_name: string;
+            locations: {
+                id: string;
+                name: string;
+                address_line1: string;
+                address_line2: string | null;
+                barangay: string | null;
+                city: string;
+                province: string | null;
+                postal_code: string | null;
+                latitude: number | null;
+                longitude: number | null;
+                timezone: string;
+                /** @description The clinic's public business number. */
+                phone: string | null;
+                hospital_name: string | null;
+                operating_hours: {
+                    day_of_week: number;
+                    opens_at: string;
+                    closes_at: string;
+                }[];
+                services: {
+                    id: string;
+                    name: string;
+                    description: string | null;
+                }[];
+            }[];
+        };
+        /** PublicDoctorDetailResource */
+        PublicDoctorDetailResource: {
             id: string;
             display_name: string;
             professional_title: string | null;
@@ -1948,7 +1982,7 @@ export interface components {
                 board_certified: boolean;
             }[];
             /** @description ISO 639 codes */
-            languages: string[];
+            languages: unknown[];
             years_experience: number | null;
             practice_locations: {
                 clinic_id: string;
@@ -1964,6 +1998,31 @@ export interface components {
                 institution: string;
                 degree: string;
                 year_completed: number | null;
+            }[];
+        };
+        /** PublicDoctorResource */
+        PublicDoctorResource: {
+            id: string;
+            display_name: string;
+            professional_title: string | null;
+            /** @description The PRC licence was checked by a MediConnect reviewer. */
+            licence_verified: boolean;
+            primary_specialty: string | null;
+            specialties: {
+                specialty_id: string;
+                name: string;
+                subspecialty: string | null;
+                board_certified: boolean;
+            }[];
+            /** @description ISO 639 codes */
+            languages: unknown[];
+            years_experience: number | null;
+            practice_locations: {
+                clinic_id: string;
+                clinic_name: string;
+                clinic_location_id: string;
+                location_name: string;
+                city: string;
             }[];
         };
         /** RefreshRequest */
@@ -3703,7 +3762,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: components["schemas"]["PublicClinicResource"];
+                        data: components["schemas"]["PublicClinicDetailResource"];
                         meta: string;
                         message: null;
                     };
@@ -4592,7 +4651,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: unknown[];
+                        data: components["schemas"]["PublicDoctorResource"][];
                         meta: string | {
                             page: number;
                             per_page: number;
@@ -5089,7 +5148,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: unknown[];
+                        data: components["schemas"]["PublicClinicResource"][];
                         meta: string | {
                             page: number;
                             per_page: number;
@@ -5180,7 +5239,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: components["schemas"]["PublicDoctorResource"];
+                        data: components["schemas"]["PublicDoctorDetailResource"];
                         meta: string;
                         message: null;
                     };
