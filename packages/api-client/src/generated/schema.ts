@@ -1219,7 +1219,14 @@ export interface components {
                 subspecialty_name: string | null;
                 is_primary: boolean;
                 board_certified: boolean;
+                /**
+                 * @description D-40: confirmed by a reviewer, or as stated by the doctor
+                 * @enum {string}
+                 */
+                verification_status: "SELF_REPORTED" | "CONFIRMED";
             }[];
+            /** @description D-40: a verified doctor has specialty changes a reviewer has not confirmed yet. */
+            specialty_review_pending: boolean;
             education: {
                 institution: string;
                 degree: string;
