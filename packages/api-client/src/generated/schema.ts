@@ -389,6 +389,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clinics/{clinicId}/doctor-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["clinicDoctorAssignments.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clinicDoctorAssignments.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/doctor-assignments/{assignmentId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clinicDoctorAssignments.end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clinics/{clinicId}/holidays": {
         parameters: {
             query?: never;
@@ -810,6 +858,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/doctors/me/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myAssignments.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/assignments/{assignmentId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["myAssignments.accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/assignments/{assignmentId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Declines a pending invitation or ends an active assignment */
+        post: operations["myAssignments.end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/doctors/me/credentials": {
         parameters: {
             query?: never;
@@ -908,6 +1005,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["myPatientProfile.update"];
+        trace?: never;
+    };
+    "/doctors/me/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myServices.index"];
+        put?: never;
+        post: operations["myServices.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/services/{serviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["myServices.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["myServices.update"];
         trace?: never;
     };
     "/auth/otp": {
@@ -1238,6 +1367,17 @@ export interface components {
             last_login_at: string | null;
             created_at: string | null;
         };
+        /**
+         * AssignDoctorRequest
+         * @description POST /clinics/{id}/doctors: invite a verified doctor to a location, found
+         *     by PRC licence number. The doctor must accept before the assignment counts.
+         */
+        AssignDoctorRequest: {
+            /** Format: uuid */
+            clinic_location_id: string;
+            /** @description The doctor's PRC licence number (digits). Only verified doctors can be found. */
+            prc_license_number: string;
+        };
         /** ClinicManagementResource */
         ClinicManagementResource: {
             id: string;
@@ -1336,6 +1476,11 @@ export interface components {
             specialty_ids: string[];
         };
         /**
+         * ConsultationType
+         * @enum {string}
+         */
+        ConsultationType: "ONLINE" | "IN_PERSON";
+        /**
          * CreateClinicRequest
          * @description POST /admin/clinics: a clinic in an existing or new organization, optionally with its first location.
          */
@@ -1378,6 +1523,30 @@ export interface components {
             default_duration_minutes?: number | null;
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
+        };
+        /**
+         * CreateDoctorServiceRequest
+         * @description POST /doctors/me/services. The fee is in centavos (D-18): ₱650.00 is 65000.
+         */
+        CreateDoctorServiceRequest: {
+            consultation_type: components["schemas"]["ConsultationType"];
+            /**
+             * Format: uuid
+             * @description Required for IN_PERSON (a location where you have an active assignment); not allowed for ONLINE.
+             */
+            clinic_location_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional link to one of the location's clinic services.
+             */
+            clinic_service_id?: string | null;
+            name: string;
+            is_follow_up?: boolean;
+            duration_minutes: number;
+            buffer_minutes?: number;
+            /** @description Centavos. Every service publishes a fee (R-17); 0 means free. */
+            fee_amount: number;
+            is_hmo_eligible?: boolean;
         };
         /**
          * CreateHolidayRequest
@@ -1491,11 +1660,59 @@ export interface components {
             created_at: string | null;
             current: boolean;
         };
+        /** DoctorAssignmentResource */
+        DoctorAssignmentResource: {
+            id: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACTIVE" | "ENDED";
+            doctor_profile_id: string;
+            doctor_display_name: string;
+            clinic_id: string;
+            clinic_name: string;
+            clinic_location_id: string;
+            location_name: string;
+            location_city: string;
+            effective_from: string | null;
+            effective_until: string | null;
+            end_reason: string | null;
+            requested_at: string;
+        };
         /**
          * DoctorDecisionRequest
          * @description Verify or activate: step-up on the route and a reason, as for every step-up action (rbac-permissions.md §7).
          */
         DoctorDecisionRequest: {
+            reason: string;
+        };
+        /** DoctorServiceResource */
+        DoctorServiceResource: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            consultation_type: "ONLINE" | "IN_PERSON";
+            clinic_location_id: string | null;
+            location_name: string | null;
+            clinic_service_id: string | null;
+            is_follow_up: boolean;
+            duration_minutes: number;
+            buffer_minutes: number;
+            /** @description Fee in centavos, its currency and a display string such as "₱650.00". */
+            fee: {
+                amount: number;
+                currency: string;
+                formatted: string;
+            };
+            /** @description Whether the doctor accepts HMOs for this service; coverage is never assumed (§12.10). */
+            is_hmo_eligible: boolean;
+            status: string;
+            effective_from: string;
+            effective_until: string | null;
+        };
+        /**
+         * EndAssignmentRequest
+         * @description End (or withdraw) an assignment: a short reason is kept with it.
+         */
+        EndAssignmentRequest: {
             reason: string;
         };
         /** ForgotPasswordRequest */
@@ -1789,6 +2006,19 @@ export interface components {
             date_of_birth?: string;
             sex?: components["schemas"]["Sex"] | null;
             relationship?: components["schemas"]["DependentRelationship"];
+        };
+        /**
+         * UpdateDoctorServiceRequest
+         * @description PATCH /doctors/me/services/{id}: a change ends this row and starts a replacement.
+         */
+        UpdateDoctorServiceRequest: {
+            name?: string;
+            is_follow_up?: boolean;
+            duration_minutes?: number;
+            buffer_minutes?: number;
+            /** @description Centavos (D-18). */
+            fee_amount?: number;
+            is_hmo_eligible?: boolean;
         };
         /**
          * UpdateLocationRequest
@@ -2899,6 +3129,99 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "clinicDoctorAssignments.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorAssignmentResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "clinicDoctorAssignments.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignDoctorRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorAssignmentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "clinicDoctorAssignments.end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndAssignmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorAssignmentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "clinicHolidays.store": {
         parameters: {
             query?: never;
@@ -3819,6 +4142,90 @@ export interface operations {
             };
         };
     };
+    "myAssignments.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorAssignmentResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myAssignments.accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorAssignmentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myAssignments.end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndAssignmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorAssignmentResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "myCredentials.index": {
         parameters: {
             query?: never;
@@ -4094,6 +4501,120 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "myServices.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorServiceResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myServices.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDoctorServiceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorServiceResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "myServices.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myServices.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateDoctorServiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorServiceResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
         };
     };
