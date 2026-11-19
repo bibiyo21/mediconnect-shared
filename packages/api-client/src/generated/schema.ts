@@ -703,6 +703,23 @@ export interface components {
             verification_token: string;
         };
         /**
+         * CreateSpecialtyRequest
+         * @description POST /admin/specialties.
+         */
+        CreateSpecialtyRequest: {
+            name: string;
+            synonyms?: string[];
+            is_active?: boolean;
+        };
+        /**
+         * CreateSubspecialtyRequest
+         * @description POST /admin/specialties/{id}/subspecialties.
+         */
+        CreateSubspecialtyRequest: {
+            name: string;
+            is_active?: boolean;
+        };
+        /**
          * DependentRelationship
          * @description How the dependent is related to the guardian (from the guardian's side: "my CHILD").
          * @enum {string}
@@ -854,25 +871,6 @@ export interface components {
          */
         Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
         /**
-         * SaveSpecialtyRequest
-         * @description POST /admin/specialties and PATCH /admin/specialties/{id}.
-         */
-        SaveSpecialtyRequest: {
-            name: string;
-            synonyms?: string[];
-            is_active?: boolean;
-            /** @description A MEDICAL_ADMIN marks the entry as reviewed (D-39). */
-            reviewed?: boolean;
-        };
-        /**
-         * SaveSubspecialtyRequest
-         * @description POST /admin/specialties/{id}/subspecialties and PATCH /admin/subspecialties/{id}.
-         */
-        SaveSubspecialtyRequest: {
-            name: string;
-            is_active?: boolean;
-        };
-        /**
          * Sex
          * @description Sex where clinically required (§4.3). Values follow the HL7 administrative gender set. Optional everywhere it is collected.
          * @enum {string}
@@ -956,6 +954,25 @@ export interface components {
         UpdateSettingRequest: {
             value: string;
             reason: string;
+        };
+        /**
+         * UpdateSpecialtyRequest
+         * @description PATCH /admin/specialties/{id}: only the fields sent change.
+         */
+        UpdateSpecialtyRequest: {
+            name?: string;
+            synonyms?: string[];
+            is_active?: boolean;
+            /** @description A MEDICAL_ADMIN marks the entry as reviewed (D-39). */
+            reviewed?: boolean;
+        };
+        /**
+         * UpdateSubspecialtyRequest
+         * @description PATCH /admin/subspecialties/{id}: only the fields sent change.
+         */
+        UpdateSubspecialtyRequest: {
+            name?: string;
+            is_active?: boolean;
         };
         /**
          * UpdateUserRolesRequest
@@ -1226,7 +1243,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaveSpecialtyRequest"];
+                "application/json": components["schemas"]["CreateSpecialtyRequest"];
             };
         };
         responses: {
@@ -1257,9 +1274,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["SaveSpecialtyRequest"];
+                "application/json": components["schemas"]["UpdateSpecialtyRequest"];
             };
         };
         responses: {
@@ -1292,7 +1309,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaveSubspecialtyRequest"];
+                "application/json": components["schemas"]["CreateSubspecialtyRequest"];
             };
         };
         responses: {
@@ -1323,9 +1340,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["SaveSubspecialtyRequest"];
+                "application/json": components["schemas"]["UpdateSubspecialtyRequest"];
             };
         };
         responses: {
