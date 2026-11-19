@@ -412,7 +412,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** ACTIVE doctors who practise at this clinic now, with confirmed specialties only (D-40) */
+        get: operations["publicClinics.doctors"];
         put?: never;
         post: operations["clinicDoctorAssignments.store"];
         delete?: never;
@@ -589,7 +590,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["publicClinics.show"];
         put?: never;
         post?: never;
         delete?: never;
@@ -966,7 +967,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["publicDoctors.index"];
         put?: never;
         post: operations["myDoctorProfile.store"];
         delete?: never;
@@ -1097,6 +1098,71 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["authentication.passwordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["publicClinics.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/operating-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["publicClinics.operatingHours"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/{doctorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["publicDoctors.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/{doctorId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Services patients can see: online, or at a location where the doctor practises now */
+        get: operations["publicDoctors.services"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1825,6 +1891,81 @@ export interface components {
          * @enum {string}
          */
         OnboardingStatus: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
+        /** PublicClinicResource */
+        PublicClinicResource: {
+            id: string;
+            name: string;
+            slug: string;
+            description: string | null;
+            organization_name: string;
+            locations: {
+                id: string;
+                name: string;
+                address_line1: string;
+                address_line2: string | null;
+                barangay: string | null;
+                city: string;
+                province: string | null;
+                postal_code: string | null;
+                latitude: number | null;
+                longitude: number | null;
+                timezone: string;
+                /** @description The clinic's public business number. */
+                phone: string | null;
+                hospital_name: string | null;
+                operating_hours: {
+                    day_of_week: number;
+                    opens_at: string;
+                    closes_at: string;
+                }[];
+                services: {
+                    id: string;
+                    name: string;
+                    description: string | null;
+                }[];
+            }[];
+            upcoming_closures: {
+                clinic_location_id: string | null;
+                date: string;
+                name: string;
+                is_closed: boolean;
+                special_opens_at: string | null;
+                special_closes_at: string | null;
+            }[];
+        };
+        /** PublicDoctorResource */
+        PublicDoctorResource: {
+            id: string;
+            display_name: string;
+            professional_title: string | null;
+            /** @description The PRC licence was checked by a MediConnect reviewer. */
+            licence_verified: boolean;
+            primary_specialty: string | null;
+            specialties: {
+                specialty_id: string;
+                name: string;
+                subspecialty: string | null;
+                board_certified: boolean;
+            }[];
+            /** @description ISO 639 codes */
+            languages: string[];
+            years_experience: number | null;
+            practice_locations: {
+                clinic_id: string;
+                clinic_name: string;
+                clinic_location_id: string;
+                location_name: string;
+                city: string;
+            }[];
+            biography: string | null;
+            medical_school: string | null;
+            gender: string | null;
+            education: {
+                institution: string;
+                degree: string;
+                year_completed: number | null;
+            }[];
+        };
         /** RefreshRequest */
         RefreshRequest: {
             refresh_token: string;
@@ -3157,6 +3298,44 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "publicClinics.doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "clinicDoctorAssignments.store": {
         parameters: {
             query?: never;
@@ -3504,6 +3683,44 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "publicClinics.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PublicClinicResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "clinicManagement.update": {
@@ -4351,6 +4568,56 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "publicDoctors.index": {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                "filter[specialty_id]"?: string;
+                /** @description Exact city name, case-insensitive, for example "Makati". */
+                "filter[city]"?: string;
+                "filter[consultation_type]"?: "ONLINE" | "IN_PERSON";
+                "filter[clinic_id]"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: unknown[];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "myDoctorProfile.store": {
         parameters: {
             query?: never;
@@ -4787,6 +5054,176 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "publicClinics.index": {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                /** @description Exact city name, case-insensitive. */
+                "filter[city]"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: unknown[];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "publicClinics.operatingHours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            clinic_location_id: string;
+                            location_name: string;
+                            timezone: string;
+                            operating_hours: {
+                                day_of_week: number;
+                                opens_at: string;
+                                closes_at: string;
+                            }[];
+                        }[];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "publicDoctors.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PublicDoctorResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "publicDoctors.services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorServiceResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
             /** @description Too many requests */
             429: {
                 headers: {
