@@ -502,6 +502,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/doctors/credentials/{credentialId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["doctor-credentials.file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/patients/me/dependents": {
         parameters: {
             query?: never;
@@ -644,6 +660,58 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["mfa.stepUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myCredentials.index"];
+        put?: never;
+        post: operations["myCredentials.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/credentials/{credentialId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["myCredentials.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/credentials/{credentialId}/download-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A short-lived signed link to download the file. Only CLEAN documents;
+         *     the link names the owner and stops working after the configured TTL
+         */
+        get: operations["myCredentials.downloadUrl"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -868,6 +936,22 @@ export interface paths {
         get: operations["specialties.specialties"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["doctors.submitForReview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1138,6 +1222,33 @@ export interface components {
             name: string;
             is_active?: boolean;
         };
+        /** CredentialResource */
+        CredentialResource: {
+            id: string;
+            /** @enum {string} */
+            credential_type: "PRC_ID" | "SPECIALTY_BOARD" | "DIPLOMA" | "OTHER";
+            original_filename: string;
+            /** @enum {string} */
+            mime_type: "application/pdf" | "image/jpeg" | "image/png";
+            size_bytes: number;
+            /**
+             * @description Only CLEAN documents can be downloaded or reviewed.
+             * @enum {string}
+             */
+            scan_status: "PENDING_SCAN" | "CLEAN" | "QUARANTINED" | "SCAN_FAILED";
+            /** @enum {string} */
+            status: "SUBMITTED" | "ACCEPTED" | "REJECTED";
+            review_note: string | null;
+            expires_on: string | null;
+            downloadable: boolean;
+            uploaded_at: string;
+        };
+        /**
+         * CredentialType
+         * @description Kinds of credential document (database-schema.md §2).
+         * @enum {string}
+         */
+        CredentialType: "PRC_ID" | "SPECIALTY_BOARD" | "DIPLOMA" | "OTHER";
         /**
          * DependentRelationship
          * @description How the dependent is related to the guardian (from the guardian's side: "my CHILD").
@@ -1557,6 +1668,23 @@ export interface components {
         UpdateUserRolesRequest: {
             roles: components["schemas"]["Role"][];
             reason: string;
+        };
+        /**
+         * UploadCredentialRequest
+         * @description POST /doctors/me/credentials (multipart/form-data).
+         */
+        UploadCredentialRequest: {
+            credential_type: components["schemas"]["CredentialType"];
+            /**
+             * Format: binary
+             * @description PDF, JPEG or PNG, checked by content as well as extension.
+             */
+            file: string;
+            /**
+             * Format: date
+             * @description Expiry printed on the document, if any (for example a PRC ID).
+             */
+            expires_on?: string | null;
         };
         /**
          * UserStatus
@@ -2765,6 +2893,46 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "doctor-credentials.file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    "Content-Length"?: string;
+                    "Content-Disposition"?: string;
+                    "Cache-Control"?: "no-store, private";
+                    "X-Content-Type-Options"?: "nosniff";
+                    "Referrer-Policy"?: "no-referrer";
+                    "Content-Security-Policy"?: "default-src 'none'; sandbox";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "dependents.index": {
         parameters: {
             query?: never;
@@ -3112,6 +3280,130 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "myCredentials.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["CredentialResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myCredentials.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UploadCredentialRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["CredentialResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "myCredentials.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myCredentials.downloadUrl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            url: string;
+                            expires_at: string;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "myDoctorProfile.store": {
@@ -3764,6 +4056,31 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "doctors.submitForReview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["MyDoctorProfileResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
 }
