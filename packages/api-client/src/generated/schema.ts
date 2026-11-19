@@ -650,6 +650,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["myDoctorProfile.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myDoctorProfile.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["myDoctorProfile.update"];
+        trace?: never;
+    };
     "/patients/me": {
         parameters: {
             query?: never;
@@ -1164,6 +1196,49 @@ export interface components {
             code?: string | null;
             recovery_code?: string | null;
         };
+        /** MyDoctorProfileResource */
+        MyDoctorProfileResource: {
+            id: string;
+            display_name: string;
+            professional_title: string | null;
+            biography: string | null;
+            prc_license_number_masked: string | null;
+            license_verification_status: string;
+            /** @enum {string} */
+            onboarding_status: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
+            licence_locked: boolean;
+            medical_school: string | null;
+            years_experience: number | null;
+            gender: string | null;
+            /** @description ISO 639 codes */
+            languages: string[];
+            specialties: {
+                specialty_id: string;
+                specialty_name: string;
+                subspecialty_id: string | null;
+                subspecialty_name: string | null;
+                is_primary: boolean;
+                board_certified: boolean;
+            }[];
+            education: {
+                institution: string;
+                degree: string;
+                year_completed: number | null;
+            }[];
+            experience: {
+                organization: string;
+                position: string;
+                started_on: string | null;
+                ended_on: string | null;
+            }[];
+            profile_completeness: number;
+            verification_history: {
+                from_status: string;
+                to_status: string;
+                reason: string;
+                occurred_at: string;
+            }[];
+        };
         /** MyPatientProfileResource */
         MyPatientProfileResource: {
             id: string;
@@ -1276,6 +1351,20 @@ export interface components {
          */
         Sex: "FEMALE" | "MALE" | "OTHER" | "UNKNOWN";
         /**
+         * StartDoctorOnboardingRequest
+         * @description POST /doctors: start onboarding as a doctor (D-16: the patient profile stays).
+         */
+        StartDoctorOnboardingRequest: {
+            /** @description The name patients see, for example "Dr. Ana Santos". */
+            display_name: string;
+            professional_title?: string | null;
+            /**
+             * @description The applicant states they are a physician licensed by the PRC; verification follows.
+             * @enum {unknown}
+             */
+            confirm_licensed: "yes" | "on" | "1" | 1 | "true" | true;
+        };
+        /**
          * StoreDependentRequest
          * @description POST /patients/me/dependents.
          */
@@ -1359,6 +1448,45 @@ export interface components {
             hospital_name?: string | null;
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
+        };
+        /**
+         * UpdateMyDoctorProfileRequest
+         * @description PATCH /doctors/me. Scalar fields change only when sent; the lists
+         *     (languages, specialties, education, experience) replace the whole set.
+         */
+        UpdateMyDoctorProfileRequest: {
+            display_name?: string;
+            professional_title?: string | null;
+            biography?: string | null;
+            /** @description Digits only. Locked while under review and after verification. */
+            prc_license_number?: string;
+            medical_school?: string | null;
+            years_experience?: number | null;
+            /** @enum {string|null} */
+            gender?: "FEMALE" | "MALE" | "OTHER" | null;
+            /** @description ISO 639 codes, for example en, fil, ceb. */
+            languages?: string[];
+            specialties?: {
+                /** Format: uuid */
+                specialty_id: string;
+                /** Format: uuid */
+                subspecialty_id?: string | null;
+                is_primary?: boolean;
+                board_certified?: boolean;
+            }[];
+            education?: {
+                institution: string;
+                degree: string;
+                year_completed?: number | null;
+            }[];
+            experience?: {
+                organization: string;
+                position: string;
+                /** Format: date */
+                started_on?: string | null;
+                /** Format: date */
+                ended_on?: string | null;
+            }[];
         };
         /**
          * UpdateMyPatientProfileRequest
@@ -2977,6 +3105,103 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "myDoctorProfile.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartDoctorOnboardingRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["MyDoctorProfileResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "myDoctorProfile.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["MyDoctorProfileResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myDoctorProfile.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateMyDoctorProfileRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["MyDoctorProfileResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "myPatientProfile.show": {
