@@ -37,6 +37,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminDoctors.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminDoctors.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/start-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminDoctors.startReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/credentials/{credentialId}/download-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminDoctors.credentialDownloadUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/credentials/{credentialId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminDoctors.reviewCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/specialties/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminDoctors.confirmSpecialties"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminDoctors.verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminDoctors.activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/doctors/{doctorId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminDoctors.reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/overview": {
         parameters: {
             query?: never;
@@ -1002,6 +1146,67 @@ export interface components {
              */
             clinic_location_id?: string | null;
         };
+        /** AdminDoctorResource */
+        AdminDoctorResource: {
+            id: string;
+            display_name: string;
+            professional_title: string | null;
+            biography: string | null;
+            prc_license_number: string | null;
+            license_verification_status: string;
+            /** @enum {string} */
+            onboarding_status: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
+            medical_school: string | null;
+            years_experience: number | null;
+            profile_completeness: number;
+            specialties: {
+                id: string;
+                specialty_name: string;
+                subspecialty_name: string | null;
+                is_primary: boolean;
+                board_certified: boolean;
+                /** @enum {string} */
+                verification_status: "SELF_REPORTED" | "CONFIRMED";
+            }[];
+            credentials: {
+                id: string;
+                /** @enum {string} */
+                credential_type: "PRC_ID" | "SPECIALTY_BOARD" | "DIPLOMA" | "OTHER";
+                original_filename: string;
+                /** @enum {string} */
+                mime_type: "application/pdf" | "image/jpeg" | "image/png";
+                size_bytes: number;
+                /**
+                 * @description Only CLEAN documents can be downloaded or reviewed.
+                 * @enum {string}
+                 */
+                scan_status: "PENDING_SCAN" | "CLEAN" | "QUARANTINED" | "SCAN_FAILED";
+                /** @enum {string} */
+                status: "SUBMITTED" | "ACCEPTED" | "REJECTED";
+                review_note: string | null;
+                expires_on: string | null;
+                downloadable: boolean;
+                uploaded_at: string;
+            }[];
+            verification_history: {
+                from_status: string;
+                to_status: string;
+                reason: string;
+                occurred_at: string;
+            }[];
+        };
+        /** AdminDoctorSummaryResource */
+        AdminDoctorSummaryResource: {
+            id: string;
+            display_name: string;
+            professional_title: string | null;
+            /** @enum {string} */
+            onboarding_status: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
+            /** @description When the doctor last submitted for review. */
+            submitted_at: string | null;
+            document_count: number;
+            profile_completeness: number;
+        };
         /** AdminSpecialtyResource */
         AdminSpecialtyResource: {
             id: string;
@@ -1122,6 +1327,13 @@ export interface components {
             email?: string | null;
             mobile?: string | null;
             verification_token: string;
+        };
+        /**
+         * ConfirmSpecialtiesRequest
+         * @description POST /admin/doctors/{id}/specialties/confirm (D-40)
+         */
+        ConfirmSpecialtiesRequest: {
+            specialty_ids: string[];
         };
         /**
          * CreateClinicRequest
@@ -1279,6 +1491,13 @@ export interface components {
             created_at: string | null;
             current: boolean;
         };
+        /**
+         * DoctorDecisionRequest
+         * @description Verify or activate: step-up on the route; the reason is optional and audited.
+         */
+        DoctorDecisionRequest: {
+            reason?: string | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Format: email */
@@ -1382,6 +1601,12 @@ export interface components {
                 country_code: string;
             } | null;
         };
+        /**
+         * OnboardingStatus
+         * @description Doctor onboarding (CLAUDE.md §5.2). Only ACTIVE doctors can be booked or listed.
+         * @enum {string}
+         */
+        OnboardingStatus: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
         /** RefreshRequest */
         RefreshRequest: {
             refresh_token: string;
@@ -1416,6 +1641,15 @@ export interface components {
                 app_version?: string | null;
             } | null;
             password_confirmation: string;
+        };
+        /**
+         * RejectDoctorRequest
+         * @description POST /admin/doctors/{id}/reject: the reason is shown to the doctor so they can fix it.
+         */
+        RejectDoctorRequest: {
+            reason: string;
+            /** @description True asks for more documents rather than rejecting outright; the doctor may resubmit either way. */
+            more_documents?: boolean;
         };
         /**
          * ReplaceHoursRequest
@@ -1455,6 +1689,16 @@ export interface components {
             verification_token: string;
             password: string;
             password_confirmation: string;
+        };
+        /**
+         * ReviewCredentialRequest
+         * @description POST /admin/doctors/{id}/credentials/{credentialId}/review
+         */
+        ReviewCredentialRequest: {
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            /** @description Shown to the doctor; required when rejecting. */
+            note?: string | null;
         };
         /**
          * Role
@@ -1866,6 +2110,299 @@ export interface operations {
                     "application/json": {
                         success: boolean;
                         data: components["schemas"]["ClinicManagementResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminDoctors.index": {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                /** @description Defaults to the queue: DOCUMENTS_SUBMITTED and UNDER_REVIEW. */
+                "filter[onboarding_status]"?: components["schemas"]["OnboardingStatus"];
+                /** @description Matches the start of the display name. */
+                "filter[search]"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorSummaryResource"][];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminDoctors.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminDoctors.startReview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminDoctors.credentialDownloadUrl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            url: string;
+                            expires_at: string;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminDoctors.reviewCredential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewCredentialRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["CredentialResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminDoctors.confirmSpecialties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmSpecialtiesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminDoctors.verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DoctorDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminDoctors.activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DoctorDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminDoctors.reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectDoctorRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminDoctorResource"];
                         meta: string;
                         message: null;
                     };
