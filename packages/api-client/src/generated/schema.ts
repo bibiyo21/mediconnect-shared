@@ -1811,6 +1811,20 @@ export interface components {
             name: string;
             is_active?: boolean;
         };
+        /**
+         * CreateSynonymRequest
+         * @description POST /admin/search/synonyms
+         */
+        CreateSynonymRequest: {
+            synonyms: string[];
+            /** @description Set for a one-way synonym: searching this term also finds the synonyms, not the reverse. */
+            root_term?: string | null;
+            /**
+             * Format: uuid
+             * @description Marks this zero-result query as handled.
+             */
+            zero_result_id?: string;
+        };
         /** CredentialResource */
         CredentialResource: {
             id: string;
@@ -2295,22 +2309,6 @@ export interface components {
          */
         Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
         /**
-         * SaveSynonymRequest
-         * @description POST /admin/search/synonyms and PATCH /admin/search/synonyms/{id}.
-         */
-        SaveSynonymRequest: {
-            synonyms: string[];
-            /** @description Set for a one-way synonym: searching this term also finds the synonyms, not the reverse. */
-            root_term?: string | null;
-            /** @enum {string} */
-            status?: "ACTIVE" | "INACTIVE";
-            /**
-             * Format: uuid
-             * @description Marks this zero-result query as handled.
-             */
-            zero_result_id?: string;
-        };
-        /**
          * Sex
          * @description Sex where clinically required (§4.3). Values follow the HL7 administrative gender set. Optional everywhere it is collected.
          * @enum {string}
@@ -2533,6 +2531,16 @@ export interface components {
         UpdateSubspecialtyRequest: {
             name?: string;
             is_active?: boolean;
+        };
+        /**
+         * UpdateSynonymRequest
+         * @description PATCH /admin/search/synonyms/{id}: only the fields sent change.
+         */
+        UpdateSynonymRequest: {
+            synonyms?: string[];
+            root_term?: string | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
         };
         /**
          * UpdateUserRolesRequest
@@ -3233,7 +3241,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaveSynonymRequest"];
+                "application/json": components["schemas"]["CreateSynonymRequest"];
             };
         };
         responses: {
@@ -3271,9 +3279,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["SaveSynonymRequest"];
+                "application/json": components["schemas"]["UpdateSynonymRequest"];
             };
         };
         responses: {
