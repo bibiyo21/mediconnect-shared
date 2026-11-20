@@ -197,6 +197,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/search/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search health over the last N days (default 7): volume, rates, latency percentiles, top queries */
+        get: operations["adminSearch.overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/search/zero-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminSearch.zeroResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/search/zero-results/{zeroResultId}/ignore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminSearch.ignore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/search/synonyms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminSearch.synonyms"];
+        put?: never;
+        post: operations["adminSearch.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/search/synonyms/{synonymId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["adminSearch.update"];
+        trace?: never;
+    };
     "/admin/settings": {
         parameters: {
             query?: never;
@@ -2214,6 +2295,22 @@ export interface components {
          */
         Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
         /**
+         * SaveSynonymRequest
+         * @description POST /admin/search/synonyms and PATCH /admin/search/synonyms/{id}.
+         */
+        SaveSynonymRequest: {
+            synonyms: string[];
+            /** @description Set for a one-way synonym: searching this term also finds the synonyms, not the reverse. */
+            root_term?: string | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: uuid
+             * @description Marks this zero-result query as handled.
+             */
+            zero_result_id?: string;
+        };
+        /**
          * Sex
          * @description Sex where clinically required (§4.3). Values follow the HL7 administrative gender set. Optional everywhere it is collected.
          * @enum {string}
@@ -2979,6 +3076,230 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSearch.overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            days: unknown;
+                            searches: number;
+                            /** @description Share of searches with no results (0-1). */
+                            zero_result_rate: number;
+                            cache_hit_rate: number;
+                            /** @description Share answered by the PostgreSQL fallback. */
+                            degraded_rate: number;
+                            /** @description Milliseconds, as measured by the API. */
+                            latency_ms: {
+                                p50: number | null;
+                                p95: number | null;
+                                p99: number | null;
+                            };
+                            top_queries: {
+                                query: string;
+                                searches: number;
+                            }[];
+                            open_zero_results: number;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSearch.zeroResults": {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: unknown[];
+                        meta: string | {
+                            page: number;
+                            per_page: number;
+                            total: number;
+                            last_page: number;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSearch.ignore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                zeroResultId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            id: string;
+                            query: string;
+                            collection: string;
+                            occurrences: number;
+                            first_seen_at: string;
+                            last_seen_at: string;
+                            status: string;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSearch.synonyms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            id: string;
+                            synonyms: string[];
+                            root_term: string | null;
+                            status: string;
+                            updated_at: string;
+                        }[];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "adminSearch.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSynonymRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            id: string;
+                            synonyms: string[];
+                            root_term: string | null;
+                            status: string;
+                            updated_at: string;
+                            synced: boolean;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "adminSearch.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                synonymId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSynonymRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            id: string;
+                            synonyms: string[];
+                            root_term: string | null;
+                            status: string;
+                            updated_at: string;
+                            synced: boolean;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "adminSettings.index": {
