@@ -1185,6 +1185,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search.doctors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/clinics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search.clinics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/specialties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search.specialties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -1511,6 +1559,18 @@ export interface components {
                 manage_doctors: boolean;
             };
         };
+        /** ClinicSearchResultResource */
+        ClinicSearchResultResource: {
+            clinic_id: string;
+            clinic_location_id: string;
+            name: string;
+            location_name: string;
+            barangay: string | null;
+            city: string;
+            services: string[];
+            doctor_count: number;
+            distance_km: number | null;
+        };
         /** ClinicSummaryResource */
         ClinicSummaryResource: {
             id: string;
@@ -1750,6 +1810,35 @@ export interface components {
          */
         DoctorDecisionRequest: {
             reason: string;
+        };
+        /** DoctorSearchResultResource */
+        DoctorSearchResultResource: {
+            doctor_id: string;
+            display_name: string;
+            professional_title: string | null;
+            /** @description confirmed specialties only (D-40) */
+            specialties: string[];
+            languages: string[];
+            years_experience: number | null;
+            /** @description PRC licence checked by MediConnect */
+            is_verified: boolean;
+            offers_online: boolean;
+            /** @description lowest fee among the matching services */
+            fee_from: {
+                amount: number;
+                currency: string;
+                formatted: string;
+            } | null;
+            locations: {
+                clinic_id: string;
+                clinic_name: string;
+                clinic_location_id: string;
+                location_name: string;
+                city: string;
+                fee_min: number | null;
+                fee_max: number | null;
+                distance_km: number | null;
+            }[];
         };
         /** DoctorServiceResource */
         DoctorServiceResource: {
@@ -2130,6 +2219,18 @@ export interface components {
          * @enum {string}
          */
         Sex: "FEMALE" | "MALE" | "OTHER" | "UNKNOWN";
+        /** SpecialtySuggestionResource */
+        SpecialtySuggestionResource: {
+            /** @description the parent specialty, for filtering doctor search */
+            specialty_id: string;
+            id: string;
+            name: string;
+            /** @enum {string} */
+            kind: "SPECIALTY" | "SUBSPECIALTY";
+            parent_name: string | null;
+            /** @description ACTIVE doctors with this confirmed specialty */
+            doctor_count: number;
+        };
         /**
          * StartDoctorOnboardingRequest
          * @description POST /doctors: start onboarding as a doctor (D-16: the patient profile stays).
@@ -5323,6 +5424,176 @@ export interface operations {
                             [key: string]: unknown;
                         };
                         meta: string;
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "search.doctors": {
+        parameters: {
+            query?: {
+                /** @description Free text: a name, specialty, condition keyword, service or clinic. Up to 100 characters. */
+                q?: string | null;
+                specialty?: string;
+                subspecialty?: string;
+                city?: string;
+                province?: string;
+                clinic_id?: string;
+                consultation_type?: "ONLINE" | "IN_PERSON";
+                /** @description Centavos. */
+                fee_min?: number;
+                /** @description Centavos. */
+                fee_max?: number;
+                gender?: string;
+                /** @description ISO 639 code, for example `fil`. */
+                language?: string;
+                experience_min?: number;
+                verified?: boolean;
+                lat?: number;
+                lng?: number;
+                radius_km?: number;
+                sort?: "relevance" | "distance" | "fee" | "rating";
+                /** @description Opaque, from `meta.next_cursor`. */
+                cursor?: string;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["DoctorSearchResultResource"][];
+                        meta: string | {
+                            found: number | string;
+                            next_cursor: string | null;
+                            took_ms: number;
+                            cache_hit: boolean;
+                            degraded: boolean;
+                            facets: {
+                                [key: string]: {
+                                    [key: string]: number;
+                                };
+                            };
+                        };
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "search.clinics": {
+        parameters: {
+            query?: {
+                q?: string | null;
+                city?: string;
+                lat?: number;
+                lng?: number;
+                radius_km?: number;
+                cursor?: string;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ClinicSearchResultResource"][];
+                        meta: string | {
+                            found: string;
+                            next_cursor: string | null;
+                            took_ms: number;
+                            cache_hit: boolean;
+                            degraded: boolean;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "search.specialties": {
+        parameters: {
+            query?: {
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["SpecialtySuggestionResource"][];
+                        meta: string | {
+                            found: string;
+                            next_cursor: string | null;
+                            took_ms: number;
+                            cache_hit: boolean;
+                            degraded: boolean;
+                        };
                         message: null;
                     };
                 };
