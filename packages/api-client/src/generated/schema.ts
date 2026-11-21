@@ -1346,6 +1346,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/schedule-exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["scheduleExceptions.index"];
+        put?: never;
+        post: operations["scheduleExceptions.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/schedule-exceptions/{exceptionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["scheduleExceptions.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/schedules": {
         parameters: {
             query?: never;
@@ -1906,6 +1938,36 @@ export interface components {
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
         };
+        /** CreateScheduleExceptionRequest */
+        CreateScheduleExceptionRequest: {
+            /** Format: uuid */
+            doctor_profile_id?: string;
+            /**
+             * Format: uuid
+             * @description Null or absent: every place of this doctor (only the doctor may set that).
+             */
+            clinic_location_id?: string | null;
+            /** @enum {string} */
+            exception_type: "VACATION" | "SICK_LEAVE" | "EMERGENCY_LEAVE" | "PUBLIC_HOLIDAY" | "CLINIC_CLOSURE" | "TEMPORARY_UNAVAILABILITY" | "SPECIAL_HOURS" | "DOCTOR_REQUESTED_CHANGE" | "CLINIC_REQUESTED_CHANGE";
+            /**
+             * @description BLOCK (default) or ADD_HOURS; special hours always add.
+             * @enum {string}
+             */
+            effect?: "BLOCK" | "ADD_HOURS";
+            /**
+             * Format: uuid
+             * @description Required when adding hours: the service the extra time is for.
+             */
+            doctor_service_mode_id?: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with an offset, for example 2026-12-24T00:00:00+08:00.
+             */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            reason?: string | null;
+        };
         /**
          * CreateSpecialtyRequest
          * @description POST /admin/specialties.
@@ -2420,6 +2482,21 @@ export interface components {
          * @enum {string}
          */
         Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
+        /** ScheduleExceptionResource */
+        ScheduleExceptionResource: {
+            id: string;
+            doctor_profile_id: string;
+            clinic_location_id: string | null;
+            doctor_service_mode_id: unknown;
+            exception_type: string;
+            effect: string;
+            /** @description D-11: 1 is the highest. */
+            priority: number;
+            starts_at: string | null;
+            ends_at: string | null;
+            reason: unknown;
+            status: string;
+        };
         /**
          * ScheduleRequest
          * @description Create (POST) or change (PATCH) a weekly schedule with its shifts and breaks
@@ -6131,6 +6208,121 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "scheduleExceptions.index": {
+        parameters: {
+            query?: {
+                clinic_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ScheduleExceptionResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /**
+             * @description An error
+             *
+             *     An error
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example You do not have access to this clinic.
+                         */
+                        message: string;
+                    } | {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "scheduleExceptions.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScheduleExceptionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            /** @description Live appointments in the blocked time: flagged for rescheduling, never cancelled. */
+                            affected_appointments: unknown[];
+                        } & {
+                            [key: string]: unknown;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "scheduleExceptions.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exceptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ScheduleExceptionResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "schedules.index": {
