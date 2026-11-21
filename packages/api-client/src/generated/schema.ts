@@ -470,6 +470,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/doctors/{doctorId}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["availability.doctor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Several doctors on one date (at most 20), for search result cards */
+        get: operations["availability.many"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clinics/{clinicId}/doctor-assignments": {
         parameters: {
             query?: never;
@@ -4036,6 +4069,101 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "availability.doctor": {
+        parameters: {
+            query?: {
+                /** @description First local date (Y-m-d); default today in the platform time zone. */
+                from?: string;
+                /** @description Last local date, inclusive; at most 31 days after `from`. */
+                to?: string;
+                clinic_location_id?: string;
+                doctor_service_id?: string;
+                consultation_type?: "ONLINE" | "IN_PERSON";
+            };
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string | {
+                            advisory: boolean;
+                            /** @constant */
+                            note: "Times can change until you reserve one.";
+                        };
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "availability.many": {
+        parameters: {
+            query: {
+                "doctor_ids[]"?: string[];
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string | {
+                            advisory: boolean;
+                            /** @constant */
+                            note: "Times can change until you reserve one.";
+                        };
+                        message: null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "clinicDoctorAssignments.index": {
