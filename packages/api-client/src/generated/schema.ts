@@ -712,6 +712,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clinics/{clinicId}/service-modes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["clinicServiceModes.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clinics/{clinicId}/services/{serviceId}/mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["clinicServiceModes.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/contact/otp": {
         parameters: {
             query?: never;
@@ -1087,6 +1119,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["myPatientProfile.update"];
+        trace?: never;
+    };
+    "/doctors/me/service-modes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myServiceModes.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/doctors/me/services/{serviceId}/mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["myServiceModes.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/doctors/me/services": {
@@ -2308,6 +2372,30 @@ export interface components {
          * @enum {string}
          */
         Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
+        /**
+         * ServiceMode
+         * @description How patients reach a doctor for one service at one location (§7.1).
+         * @enum {string}
+         */
+        ServiceMode: "APPOINTMENT" | "WALK_IN" | "BOTH";
+        /** ServiceModeResource */
+        ServiceModeResource: {
+            doctor_service_id: string;
+            doctor_profile_id: string;
+            service_name: string;
+            consultation_type: string;
+            /** @description Null for online services. */
+            clinic_location_id: string | null;
+            location_name: string | null;
+            /** @description APPOINTMENT, WALK_IN or BOTH; null when not set yet. Online services are APPOINTMENT only. */
+            service_mode: string | null;
+            service_mode_id: string | null;
+            effective_from: string | null;
+        };
+        /** SetServiceModeRequest */
+        SetServiceModeRequest: {
+            service_mode: components["schemas"]["ServiceMode"];
+        };
         /**
          * Sex
          * @description Sex where clinically required (§4.3). Values follow the HL7 administrative gender set. Optional everywhere it is collected.
@@ -4306,6 +4394,68 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "clinicServiceModes.index": {
+        parameters: {
+            query?: {
+                doctor_profile_id?: string;
+            };
+            header?: never;
+            path: {
+                clinicId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ServiceModeResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "clinicServiceModes.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clinicId: string;
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetServiceModeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ServiceModeResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "contactChange.requestCode": {
         parameters: {
             query?: never;
@@ -5258,6 +5408,63 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "myServiceModes.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ServiceModeResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "myServiceModes.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetServiceModeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ServiceModeResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
         };
     };
