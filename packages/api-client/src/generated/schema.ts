@@ -1314,6 +1314,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/doctors/{doctorId}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["scheduling.publicSchedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -1328,6 +1344,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["schedules.index"];
+        put?: never;
+        post: operations["schedules.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/schedules/{scheduleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["schedules.show"];
+        put?: never;
+        post?: never;
+        delete: operations["schedules.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["schedules.update"];
         trace?: never;
     };
     "/search/doctors": {
@@ -2372,6 +2420,71 @@ export interface components {
          * @enum {string}
          */
         Role: "SUPER_ADMIN" | "ADMIN" | "MEDICAL_ADMIN" | "DOCTOR" | "PATIENT" | "CLINIC_MANAGER" | "CLINIC_STAFF" | "FINANCE_OFFICER" | "SUPPORT_AGENT" | "MODERATOR";
+        /**
+         * ScheduleRequest
+         * @description Create (POST) or change (PATCH) a weekly schedule with its shifts and breaks
+         *     in one payload. On PATCH every field is optional, `shifts` replaces all
+         *     shifts, and the version comes from `If-Match` (or `version`).
+         */
+        ScheduleRequest: {
+            /** Format: uuid */
+            doctor_profile_id?: string;
+            name: string;
+            /** Format: date */
+            effective_from: string;
+            /** Format: date */
+            effective_until?: string | null;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE";
+            version?: number;
+            shifts: {
+                day_of_week: number;
+                /** Format: uuid */
+                doctor_service_mode_id: string;
+                starts_at: string;
+                ends_at: string;
+                timezone?: string | null;
+                slot_duration_minutes: number;
+                buffer_minutes?: number;
+                max_appointments?: number | null;
+                walkin_capacity?: number | null;
+                breaks?: {
+                    starts_at: string;
+                    ends_at: string;
+                    label?: string | null;
+                }[];
+            }[];
+        };
+        /** ScheduleResource */
+        ScheduleResource: {
+            id: string;
+            doctor_profile_id: string;
+            name: string;
+            status: string;
+            /** @description Send back as If-Match when changing the schedule. */
+            version: number;
+            effective_from: string | null;
+            effective_until: string | null;
+            shifts: {
+                id: string;
+                day_of_week: number;
+                doctor_service_mode_id: string;
+                /** @description null for online shifts */
+                clinic_location_id: string | null;
+                starts_at: string;
+                ends_at: string;
+                timezone: string;
+                slot_duration_minutes: number;
+                buffer_minutes: number;
+                max_appointments: number | null;
+                walkin_capacity: number | null;
+                breaks: {
+                    starts_at: string;
+                    ends_at: string;
+                    label: string | null;
+                }[];
+            }[];
+        };
         /**
          * ServiceMode
          * @description How patients reach a doctor for one service at one location (§7.1).
@@ -5934,6 +6047,47 @@ export interface operations {
             };
         };
     };
+    "scheduling.publicSchedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: string;
+                        meta: string | {
+                            /** @constant */
+                            note: "Regular hours. Exceptions such as leave and holidays apply; check availability for bookable times.";
+                        };
+                        message: null;
+                    };
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "authentication.registration": {
         parameters: {
             query?: never;
@@ -5977,6 +6131,207 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "schedules.index": {
+        parameters: {
+            query?: {
+                clinic_id?: string;
+                doctor_profile_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ScheduleResource"][];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /**
+             * @description An error
+             *
+             *     An error
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example You do not have access to this clinic.
+                         */
+                        message: string;
+                    } | {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "schedules.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ScheduleResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "schedules.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ScheduleResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "schedules.destroy": {
+        parameters: {
+            query?: {
+                doctor_profile_id?: string;
+                name?: string;
+                effective_from?: string;
+                effective_until?: string | null;
+                status?: "DRAFT" | "ACTIVE";
+                version?: number;
+                shifts?: {
+                    day_of_week: number;
+                    /** Format: uuid */
+                    doctor_service_mode_id: string;
+                    starts_at: string;
+                    ends_at: string;
+                    timezone?: string | null;
+                    slot_duration_minutes: number;
+                    buffer_minutes?: number;
+                    max_appointments?: number | null;
+                    walkin_capacity?: number | null;
+                    breaks?: {
+                        starts_at: string;
+                        ends_at: string;
+                        label?: string | null;
+                    }[];
+                }[];
+            };
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            id: string;
+                            /** @constant */
+                            status: "ARCHIVED";
+                            affected_appointments: unknown[];
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "schedules.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ScheduleResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "search.doctors": {
