@@ -2167,6 +2167,8 @@ export interface components {
             /** @description PRC licence checked by MediConnect */
             is_verified: boolean;
             offers_online: boolean;
+            /** @description The next open time anywhere, UTC (4.8). Advisory: booking revalidates; null when nothing is open or the indexed time has passed. */
+            next_available_at: string | null;
             /** @description lowest fee among the matching services */
             fee_from: {
                 amount: number;
@@ -2181,6 +2183,7 @@ export interface components {
                 city: string;
                 fee_min: number | null;
                 fee_max: number | null;
+                next_available_at: string | null;
                 distance_km: number | null;
             }[];
         };
@@ -6800,7 +6803,13 @@ export interface operations {
                 lat?: number;
                 lng?: number;
                 radius_km?: number;
-                sort?: "relevance" | "distance" | "fee" | "rating";
+                /** @description A Philippine date, today or within the next 30 days: doctors with an open time that day. Advisory; booking revalidates. */
+                available_date?: string;
+                /** @description Philippine time, `HH:MM`: an open time starting at or after this. */
+                available_time_from?: string;
+                /** @description Philippine time, `HH:MM`: an open time starting before this. */
+                available_time_to?: string;
+                sort?: "relevance" | "distance" | "fee" | "rating" | "next_available";
                 /** @description Opaque, from `meta.next_cursor`. */
                 cursor?: string;
                 per_page?: number;
