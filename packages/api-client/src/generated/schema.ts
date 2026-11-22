@@ -503,6 +503,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/broadcasting/auth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize a channel subscription */
+        post: operations["notifications.broadcastAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clinics/{clinicId}/doctor-assignments": {
         parameters: {
             query?: never;
@@ -1800,6 +1817,19 @@ export interface components {
             service_name: string;
             /** @description ONLINE or IN_PERSON. */
             consultation_type: string;
+        };
+        /**
+         * BroadcastAuthRequest
+         * @description The Pusher-protocol subscription handshake. Only plain private channels are authorized here
+         *     (no presence channels until a module needs one, and no private-encrypted- channels, which
+         *     would sign a name the callbacks never match); whether this user may join the named channel
+         *     is decided by the channel callback in routes/channels.php.
+         */
+        BroadcastAuthRequest: {
+            /** @description The connection id the WebSocket server gave the client, like `1234.5678`. */
+            socket_id: string;
+            /** @description The channel to join, with its prefix, like `private-user.{id}`. */
+            channel_name: string;
         };
         /** ClinicManagementResource */
         ClinicManagementResource: {
@@ -4242,6 +4272,76 @@ export interface operations {
             };
         };
     };
+    "notifications.broadcastAuth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastAuthRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        auth: string;
+                        channel_data?: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description The channel does not exist or is not yours to join. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        message: string;
+                        errors: Record<string, never>;
+                        code: string;
+                        request_id: string | null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+            /** @description An error */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example Realtime updates are not available.
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "clinicDoctorAssignments.index": {
         parameters: {
             query?: never;
@@ -4847,6 +4947,21 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example You do not have access to this location.
+                         */
+                        message: string;
+                    };
+                };
+            };
             422: components["responses"]["ValidationException"];
         };
     };
