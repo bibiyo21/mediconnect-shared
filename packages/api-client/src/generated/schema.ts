@@ -6467,6 +6467,7 @@ export interface operations {
     "scheduleExceptions.index": {
         parameters: {
             query?: {
+                /** @description A clinic you manage: its doctors' entries at its locations. Without it, your own. */
                 clinic_id?: string;
             };
             header?: never;
@@ -6582,7 +6583,9 @@ export interface operations {
     "schedules.index": {
         parameters: {
             query?: {
+                /** @description A clinic you manage: its doctors' entries at its locations. Without it, your own. */
                 clinic_id?: string;
+                /** @description With clinic_id: one doctor only. */
                 doctor_profile_id?: string;
             };
             header?: never;
