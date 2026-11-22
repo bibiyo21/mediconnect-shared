@@ -1782,6 +1782,25 @@ export interface components {
             /** @description The doctor's PRC licence number (digits). Only verified doctors can be found. */
             prc_license_number: string;
         };
+        /** AvailabilitySlotResource */
+        AvailabilitySlotResource: {
+            /** @description Projection slot id; pass it to POST /holds. */
+            slot_id: string;
+            /** @description UTC, ISO 8601. */
+            starts_at: string;
+            /** @description UTC, ISO 8601. */
+            ends_at: string;
+            /** @description Calendar date in the clinic time zone (YYYY-MM-DD). */
+            local_date: string;
+            /** @description IANA time zone used to show this time, e.g. Asia/Manila. */
+            timezone: string;
+            /** @description Null for online consultations. */
+            clinic_location_id: string | null;
+            doctor_service_id: string;
+            service_name: string;
+            /** @description ONLINE or IN_PERSON. */
+            consultation_type: string;
+        };
         /** ClinicManagementResource */
         ClinicManagementResource: {
             id: string;
@@ -4142,7 +4161,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: string;
+                        data: components["schemas"]["AvailabilitySlotResource"][];
                         meta: string | {
                             advisory: boolean;
                             /** @constant */
@@ -4186,7 +4205,19 @@ export interface operations {
                 content: {
                     "application/json": {
                         success: boolean;
-                        data: string;
+                        data: Record<string, never> | {
+                            [key: string]: {
+                                slot_id: string;
+                                starts_at: string;
+                                ends_at: string;
+                                local_date: string;
+                                timezone: string;
+                                clinic_location_id: string | null;
+                                doctor_service_id: string;
+                                service_name: string;
+                                consultation_type: string;
+                            }[];
+                        };
                         meta: string | {
                             advisory: boolean;
                             /** @constant */
