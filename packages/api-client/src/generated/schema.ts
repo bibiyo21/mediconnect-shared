@@ -1331,6 +1331,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/presence/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your own presence: the open session, or NOT_CHECKED_IN */
+        get: operations["presence.me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check in at a clinic location
+         * @description Needs an active assignment and an active service at the location, and the clinic open now or
+         *     within your shift window, which starts up to 60 minutes before the shift (422 with a `reason_code` such as
+         *     `no_assignment`, `outside_hours` otherwise). Already IN here: 200 with the current state. Open session in
+         *     another state or at another location: 409 `open_session`.
+         */
+        post: operations["presence.checkIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/break/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a break. Only from IN (409 otherwise; already ON_BREAK: 200, unchanged). A reminder is sent at the expected end */
+        post: operations["presence.startBreak"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/break/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End a break. Only from ON_BREAK (409 otherwise; already IN: 200, unchanged) */
+        post: operations["presence.endBreak"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/unavailable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark yourself temporarily unavailable (TEMPORARILY_UNAVAILABLE). Only from IN (409 otherwise; already unavailable: 200, unchanged) */
+        post: operations["presence.markUnavailable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Become available again. Only from TEMPORARILY_UNAVAILABLE (409 otherwise; already IN: 200, unchanged) */
+        post: operations["presence.markAvailable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clinics": {
         parameters: {
             query?: never;
@@ -1388,6 +1496,27 @@ export interface paths {
         };
         /** Services patients can see: online, or at a location where the doctor practises now */
         get: operations["publicDoctors.services"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/doctors/{doctorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A doctor's presence right now
+         * @description Public. Only active, listed doctors are visible (404 otherwise). The status is indicative and
+         *     set by the doctor or clinic staff; it is not a guarantee that the doctor can see you.
+         */
+        get: operations["publicPresence.show"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1831,6 +1960,20 @@ export interface components {
             /** @description The channel to join, with its prefix, like `private-user.{id}`. */
             channel_name: string;
         };
+        /** CheckInRequest */
+        CheckInRequest: {
+            /**
+             * Format: uuid
+             * @description Clinic staff only: the doctor to act for. Omit to change your own presence.
+             */
+            doctor_id?: string | null;
+            /**
+             * Format: uuid
+             * @description The clinic location to check in at (required: online presence is not available). Unknown fields such as location evidence are ignored.
+             */
+            clinic_location_id: string;
+            reason?: components["schemas"]["PresenceReason"] | null;
+        };
         /** ClinicManagementResource */
         ClinicManagementResource: {
             id: string;
@@ -2267,6 +2410,28 @@ export interface components {
         EndAssignmentRequest: {
             reason: string;
         };
+        /** ErrorEnvelope */
+        ErrorEnvelope: {
+            /** @enum {boolean} */
+            success: false;
+            /** @description Safe to show; never personal or clinical data. */
+            message: string;
+            /** @description Field name to a list of messages, or a state hint such as {"status": ["IN"]}. */
+            errors: {
+                [key: string]: string[];
+            };
+            /**
+             * @description Stable machine-readable error code.
+             * @enum {string}
+             */
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "MFA_REQUIRED" | "STEP_UP_REQUIRED" | "FORBIDDEN" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "SLOT_UNAVAILABLE" | "INVALID_STATE_TRANSITION" | "CONCURRENT_MODIFICATION" | "IDEMPOTENCY_IN_PROGRESS" | "ACTIVE_CONSULTATION" | "QUEUE_CLOSED" | "QUEUE_FULL" | "VALIDATION_FAILED" | "IDEMPOTENCY_KEY_REUSED" | "HMO_NOT_ACCEPTED" | "RECORD_FINALIZED" | "RATE_LIMITED" | "SERVER_ERROR" | "DEPENDENCY_UNAVAILABLE";
+            /**
+             * @description Optional finer reason inside the code, for example `no_assignment` or `open_session`. Absent when the code says it all.
+             * @enum {string}
+             */
+            reason_code?: "doctor_not_active" | "location_not_active" | "no_assignment" | "no_service_mode" | "clinic_closed" | "closed_holiday" | "outside_hours" | "open_session" | "not_checked_in" | "invalid_transition" | "change_in_progress";
+            request_id: string | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Format: email */
@@ -2283,6 +2448,20 @@ export interface components {
                 name?: string | null;
                 app_version?: string | null;
             } | null;
+        };
+        /** MarkUnavailableRequest */
+        MarkUnavailableRequest: {
+            /**
+             * Format: uuid
+             * @description Clinic staff only: the doctor to act for. Omit to change your own presence.
+             */
+            doctor_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Required when acting for another doctor: the location where you hold presence rights.
+             */
+            clinic_location_id?: string | null;
+            reason?: components["schemas"]["PresenceReason"] | null;
         };
         /** MfaCodeRequest */
         MfaCodeRequest: {
@@ -2376,6 +2555,43 @@ export interface components {
          * @enum {string}
          */
         OnboardingStatus: "REGISTERED" | "DOCUMENTS_SUBMITTED" | "UNDER_REVIEW" | "REJECTED" | "VERIFIED" | "ACTIVE";
+        /**
+         * PresenceActionRequest
+         * @description Base for presence writes. Fine-grained authorization (own presence, or presence.manage at the
+         *     location) is decided by PresenceAccess in the controller; this is only the coarse gate.
+         */
+        PresenceActionRequest: {
+            /**
+             * Format: uuid
+             * @description Clinic staff only: the doctor to act for. Omit to change your own presence.
+             */
+            doctor_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Required when acting for another doctor: the location where you hold presence rights.
+             */
+            clinic_location_id?: string | null;
+        };
+        /**
+         * PresenceReason
+         * @description Why a presence change was made: a fixed code, never free text (free text can carry personal or clinical detail and ends up in event rows and logs). Shown to the clinic's staff only; never public.
+         * @enum {string}
+         */
+        PresenceReason: "SHIFT_START" | "LATE_ARRIVAL" | "COVERING_COLLEAGUE" | "ADMIN_WORK" | "PHONE_CALL" | "EMERGENCY" | "PERSONAL" | "OTHER";
+        /** PresenceStateResource */
+        PresenceStateResource: {
+            /** @description The stored status: IN, ON_BREAK or TEMPORARILY_UNAVAILABLE while a session is open, otherwise NOT_CHECKED_IN. */
+            status: string | "NOT_CHECKED_IN";
+            /** @description Null when there is no open session. */
+            session_id: string | null;
+            clinic_location_id: string | null;
+            /** @description UTC. */
+            checked_in_at: string | null;
+            /** @description UTC; set only while ON_BREAK. An expectation, not a promise. */
+            break_expected_end_at: string | null;
+            /** @description Increases with every change; clients can ignore an older hint. */
+            version: number | null;
+        };
         /** PublicClinicDetailResource */
         PublicClinicDetailResource: {
             id: string;
@@ -2509,6 +2725,14 @@ export interface components {
                 location_name: string;
                 city: string;
             }[];
+        };
+        /** PublicPresenceResource */
+        PublicPresenceResource: {
+            doctor_id: string;
+            /** @description IN, BUSY, ON_BREAK, AWAY or NOT_IN. Indicative: it is set by the doctor or clinic staff and can lag. */
+            status: string;
+            /** @description Where the doctor is checked in; null when NOT_IN. */
+            clinic_location_id: string | null;
         };
         /** RefreshRequest */
         RefreshRequest: {
@@ -2730,6 +2954,26 @@ export interface components {
             parent_name: string | null;
             /** @description ACTIVE doctors with this confirmed specialty */
             doctor_count: number;
+        };
+        /** StartBreakRequest */
+        StartBreakRequest: {
+            /**
+             * Format: uuid
+             * @description Clinic staff only: the doctor to act for. Omit to change your own presence.
+             */
+            doctor_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Required when acting for another doctor: the location where you hold presence rights.
+             */
+            clinic_location_id?: string | null;
+            /** @description How long the break is expected to last, in minutes (at most the configured maximum, 240 by default). */
+            expected_minutes: number;
+            /**
+             * Format: uuid
+             * @description One of the doctor's scheduled breaks at this location, when the break is a scheduled one.
+             */
+            scheduled_break_id?: string | null;
         };
         /**
          * StartDoctorOnboardingRequest
@@ -6354,6 +6598,324 @@ export interface operations {
             };
         };
     };
+    "presence.me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "presence.checkIn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description INVALID_STATE_TRANSITION, reason_code `open_session`: the doctor already has an open session in another state or at another location (errors.clinic_location_id only for the doctor and staff of that location), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description VALIDATION_FAILED. For a check-in the rules refused, reason_code is one of: doctor_not_active, location_not_active, no_assignment, no_service_mode, clinic_closed, closed_holiday, outside_hours; otherwise errors lists the invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "presence.startBreak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartBreakRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "presence.endBreak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PresenceActionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "presence.markUnavailable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarkUnavailableRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "presence.markAvailable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PresenceActionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PresenceStateResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "publicClinics.index": {
         parameters: {
             query?: {
@@ -6508,6 +7070,53 @@ export interface operations {
                         meta: string;
                         message: null;
                     };
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "publicPresence.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PublicPresenceResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description No active, listed doctor with this id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Too many requests */
