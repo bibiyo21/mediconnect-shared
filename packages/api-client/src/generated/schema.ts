@@ -953,6 +953,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/availability/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["holds.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/availability/holds/{reservationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["holds.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/mfa/totp/setup": {
         parameters: {
             query?: never;
@@ -1932,6 +1964,16 @@ export interface components {
             /** @description Centavos. Every service publishes a fee (R-17); 0 means free. */
             fee_amount: number;
             is_hmo_eligible?: boolean;
+        };
+        /** CreateHoldRequest */
+        CreateHoldRequest: {
+            /** Format: uuid */
+            slot_id: string;
+            /**
+             * Format: uuid
+             * @description Your own patient profile (default) or a dependant you are authorized for.
+             */
+            patient_profile_id?: string;
         };
         /**
          * CreateHolidayRequest
@@ -5209,6 +5251,87 @@ export interface operations {
                 };
             };
             404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "holds.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHoldRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            reservation_id: string;
+                            slot_id: string;
+                            starts_at: string;
+                            ends_at: string;
+                            /** @description The time is kept for you until then; it is released automatically afterwards. */
+                            expires_at: string;
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "holds.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reservationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            reservation_id: string;
+                            /** @constant */
+                            status: "RELEASED";
+                        };
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "mfa.setup": {
