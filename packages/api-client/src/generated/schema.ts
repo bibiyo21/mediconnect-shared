@@ -2666,7 +2666,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string}
              */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "MFA_REQUIRED" | "STEP_UP_REQUIRED" | "FORBIDDEN" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "SLOT_UNAVAILABLE" | "INVALID_STATE_TRANSITION" | "CONCURRENT_MODIFICATION" | "IDEMPOTENCY_IN_PROGRESS" | "ACTIVE_CONSULTATION" | "QUEUE_CLOSED" | "QUEUE_FULL" | "QUEUE_NOT_STARTED" | "REGISTRATION_NOT_ALLOWED" | "CAPACITY_OVERRIDE_REQUIRED" | "ENTRY_ALREADY_LIVE" | "DAILY_LIMIT_REACHED" | "LATE_RISK_ACK_REQUIRED" | "VALIDATION_FAILED" | "IDEMPOTENCY_KEY_REUSED" | "HMO_NOT_ACCEPTED" | "RECORD_FINALIZED" | "RATE_LIMITED" | "SERVER_ERROR" | "DEPENDENCY_UNAVAILABLE";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "MFA_REQUIRED" | "STEP_UP_REQUIRED" | "FORBIDDEN" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "SLOT_UNAVAILABLE" | "INVALID_STATE_TRANSITION" | "CONCURRENT_MODIFICATION" | "IDEMPOTENCY_IN_PROGRESS" | "ACTIVE_CONSULTATION" | "QUEUE_CLOSED" | "QUEUE_FULL" | "QUEUE_NOT_STARTED" | "REGISTRATION_NOT_ALLOWED" | "CAPACITY_OVERRIDE_REQUIRED" | "ENTRY_ALREADY_LIVE" | "DAILY_LIMIT_REACHED" | "APPOINTMENT_WINDOW_PROTECTED" | "DOCTOR_NOT_AVAILABLE" | "ENTRY_ALREADY_CALLED" | "DOCTOR_ALREADY_CALLING" | "NOT_NEXT_IN_ORDER" | "RECALL_LIMIT_REACHED" | "QUEUE_EMPTY" | "LATE_RISK_ACK_REQUIRED" | "VALIDATION_FAILED" | "IDEMPOTENCY_KEY_REUSED" | "HMO_NOT_ACCEPTED" | "RECORD_FINALIZED" | "RATE_LIMITED" | "SERVER_ERROR" | "DEPENDENCY_UNAVAILABLE";
             /**
              * @description Optional finer reason inside the code, for example `no_assignment` or `open_session`. Absent when the code says it all.
              * @enum {string}
@@ -3589,6 +3589,8 @@ export interface components {
              *     | `UNLIMITED` <br/> No cap: only the cutoff stops registrations. Stored on the queue as a null capacity. |
              */
             capacity_mode?: components["schemas"]["CapacityMode"];
+            /** @description How many times a called patient may be recalled before staff may mark them a no-show. 1 to 10 (WalkInPolicy::MAX_RECALL_LIMIT), default 2. */
+            recall_limit?: number;
         };
         /**
          * UploadCredentialRequest
@@ -3758,10 +3760,12 @@ export interface components {
             assignment_id: string;
             clinic_location_id: string;
             doctor_profile_id: string;
-            allow_patient_app_registration: string;
-            cutoff_minutes_before_close: string;
+            allow_patient_app_registration: boolean;
+            cutoff_minutes_before_close: number;
             number_prefix: string;
             capacity_mode: string;
+            /** @description How many times a called patient may be recalled before staff may mark a no-show. */
+            recall_limit: number;
             /** @description The capacity today's schedule gives this doctor here (the sum over today's walk-in shifts). With UNLIMITED it is informational: the queue has no cap. */
             derived_capacity_today: number;
             /** @description The location's local date the capacity is for (Y-m-d). */
