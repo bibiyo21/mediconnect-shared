@@ -1612,7 +1612,7 @@ export interface paths {
          * @description The entry must be WAITING and the head of the queue order (409 NOT_NEXT_IN_ORDER otherwise). `409` codes: DOCTOR_NOT_AVAILABLE (reason_code on_break,
          *     unavailable, not_checked_in, checked_out, doctor_not_active, location_not_active, no_assignment, no_doctor), QUEUE_CLOSED (reason_code closed or not_today),
          *     ENTRY_ALREADY_CALLED (errors.entry_id), DOCTOR_ALREADY_CALLING (reason_code other_queue or previous_day;
-         *     no ids), APPOINTMENT_WINDOW_PROTECTED (reason_code appointment or hold), CONCURRENT_MODIFICATION (retry with a new key).
+         *     no ids), APPOINTMENT_WINDOW_PROTECTED (reason_code appointment or hold, errors.blocked_until), CONCURRENT_MODIFICATION (retry with a new key).
          *     `override_reason_code` lets a triaged patient pass an appointment-window refusal and needs `walkins.manage_queue` (422 for a patient with no triage).
          */
         post: operations["queueOperations.call"];
