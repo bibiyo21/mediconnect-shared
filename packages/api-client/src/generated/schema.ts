@@ -1584,6 +1584,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Complete registration (step 2) and sign in
+         * @description Web clients (an Origin on a stateful domain) receive a session cookie. Every other client receives tokens and MUST send
+         *     `device.platform` (`IOS` or `ANDROID`): without it the request is refused with 422. `device.name` and `device.app_version` are optional.
+         */
         post: operations["authentication.registration"];
         delete?: never;
         options?: never;
@@ -1712,6 +1717,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Sign in with email or mobile and password
+         * @description Web clients (an Origin on a stateful domain) receive a session cookie. Every other client receives tokens and MUST send
+         *     `device.platform` (`IOS` or `ANDROID`): without it the request is refused with 422. `device.name` and `device.app_version` are optional.
+         */
         post: operations["session.login"];
         delete?: never;
         options?: never;
