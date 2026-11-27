@@ -1575,6 +1575,141 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/walk-ins/queues/{id}/call-next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Call the next patient
+         * @description Calls the head of the queue order (triage, then the time they became ready, then the number); REGISTERED entries are never called. Needs
+         *     `walkins.call_patient`. `409` codes: DOCTOR_NOT_AVAILABLE (reason_code on_break, unavailable, not_checked_in, checked_out, doctor_not_active, location_not_active, no_assignment, no_doctor),
+         *     QUEUE_CLOSED (reason_code closed or not_today), ENTRY_ALREADY_CALLED (errors.entry_id), DOCTOR_ALREADY_CALLING (reason_code other_queue or previous_day; no ids), QUEUE_EMPTY, APPOINTMENT_WINDOW_PROTECTED (reason_code appointment or hold,
+         *     errors.blocked_until), CONCURRENT_MODIFICATION (retry with a new key). Never overrides a protected window, and `override_reason_code` in the body is refused (422).
+         */
+        post: operations["queueOperations.callNext"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Call one patient
+         * @description The entry must be WAITING and the head of the queue order (409 NOT_NEXT_IN_ORDER otherwise). `409` codes: DOCTOR_NOT_AVAILABLE (reason_code on_break,
+         *     unavailable, not_checked_in, checked_out, doctor_not_active, location_not_active, no_assignment, no_doctor), QUEUE_CLOSED (reason_code closed or not_today),
+         *     ENTRY_ALREADY_CALLED (errors.entry_id), DOCTOR_ALREADY_CALLING (reason_code other_queue or previous_day;
+         *     no ids), APPOINTMENT_WINDOW_PROTECTED (reason_code appointment or hold), CONCURRENT_MODIFICATION (retry with a new key).
+         *     `override_reason_code` lets a triaged patient pass an appointment-window refusal and needs `walkins.manage_queue` (422 for a patient with no triage).
+         */
+        post: operations["queueOperations.call"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Call the called patient again (CALLED only). Counts up to the doctor's recall limit at this location (409 RECALL_LIMIT_REACHED); nothing changes by itself afterwards. Needs `walkins.call_patient` */
+        post: operations["queueOperations.recall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Skip the called patient who did not come (CALLED to SKIPPED). They keep their place in the day and can be returned. Needs `walkins.manage_queue` */
+        post: operations["queueOperations.skip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a no-show: a skipped patient at any time, a called patient only after the recall limit is reached. Needs `walkins.manage_queue` */
+        post: operations["queueOperations.noShow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put a skipped patient back in line (SKIPPED to WAITING), at the end of their priority group from now
+         * @description Staff or doctor only (`walkins.manage_queue`). The queue must be open or paused and belong to today (409 QUEUE_CLOSED with reason_code `closed` or `not_today`).
+         */
+        post: operations["queueOperations.returnToQueue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/priority": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change the triage level of a WAITING or SKIPPED entry. Needs `walkins.manage_queue`; patients cannot. The reason is a code; the event and audit row carry codes only */
+        post: operations["queueOperations.priority"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -2177,6 +2312,21 @@ export interface components {
             channel_name: string;
         };
         /**
+         * CallNextRequest
+         * @description POST /walk-ins/queues/{id}/call-next
+         */
+        CallNextRequest: {
+            /** @description Never accepted: call-next cannot override a protected appointment window (use `/walk-ins/{id}/call`). */
+            override_reason_code?: string;
+        };
+        /**
+         * CallWalkInRequest
+         * @description POST /walk-ins/{id}/call
+         */
+        CallWalkInRequest: {
+            override_reason_code?: components["schemas"]["PriorityReason"] | null;
+        };
+        /**
          * CancelReason
          * @description Why an entry was cancelled (decision 52). Only the code is ever stored on the event, audit row or notice.
          * @enum {string}
@@ -2202,6 +2352,20 @@ export interface components {
          * @enum {string}
          */
         CapacityMode: "DERIVED" | "UNLIMITED";
+        /**
+         * ChangePriorityRequest
+         * @description POST /walk-ins/{id}/priority
+         */
+        ChangePriorityRequest: {
+            /**
+             * @description NORMAL, PRIORITY or URGENT.
+             * @enum {string}
+             */
+            priority_level: "NORMAL" | "PRIORITY" | "URGENT";
+            priority_reason_code?: components["schemas"]["PriorityReason"] | null;
+            /** @description An optional short note for a priority: no symptoms or diagnosis. At most 140 characters. Kept encrypted on the entry; never in events, audit rows or notices. */
+            priority_note?: string | null;
+        };
         /** CheckInRequest */
         CheckInRequest: {
             /**
@@ -2671,7 +2835,7 @@ export interface components {
              * @description Optional finer reason inside the code, for example `no_assignment` or `open_session`. Absent when the code says it all.
              * @enum {string}
              */
-            reason_code?: "doctor_not_active" | "location_not_active" | "no_assignment" | "no_service_mode" | "clinic_closed" | "closed_holiday" | "outside_hours" | "open_session" | "not_checked_in" | "invalid_transition" | "change_in_progress" | "doctor_not_active" | "location_not_active" | "remote_registration_off" | "mobile_not_verified" | "doctor_unavailable" | "doctor_checked_out" | "no_walkin_hours_today" | "paused" | "closed" | "cutoff_passed" | "clinic_closed_today" | "live_entries_per_patient" | "patients_per_account_per_day";
+            reason_code?: "doctor_not_active" | "location_not_active" | "no_assignment" | "no_service_mode" | "clinic_closed" | "closed_holiday" | "outside_hours" | "open_session" | "not_checked_in" | "invalid_transition" | "change_in_progress" | "doctor_not_active" | "location_not_active" | "remote_registration_off" | "mobile_not_verified" | "doctor_unavailable" | "doctor_checked_out" | "no_walkin_hours_today" | "paused" | "closed" | "cutoff_passed" | "clinic_closed_today" | "live_entries_per_patient" | "patients_per_account_per_day" | "on_break" | "unavailable" | "checked_out" | "not_today" | "appointment" | "hold" | "no_doctor" | "other_queue" | "previous_day";
             request_id: string | null;
         };
         /** ForgotPasswordRequest */
@@ -3662,6 +3826,10 @@ export interface components {
             priority_level: string;
             /** @enum {string|null} */
             priority_reason_code: "SENIOR_PWD" | "PREGNANT" | "DOCTOR_REQUEST" | "STAFF_CONCERN" | "OTHER" | null;
+            /** @description When the entry was called (UTC), null if it never was. A recall does not change it. Staff and doctor only. */
+            called_at: string | null;
+            /** @description How many times the called patient was called again since the last call. Staff and doctor only. */
+            recall_count: number;
             /** @description What the patient says their HMO is called: as typed, not verified. Never a coverage statement. */
             hmo_claim: {
                 /** @constant */
@@ -7831,6 +7999,511 @@ export interface operations {
             };
         };
     };
+    "queueOperations.callNext": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CallNextRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description DOCTOR_NOT_AVAILABLE (reason_code: on_break, unavailable, not_checked_in, checked_out, doctor_not_active, location_not_active, no_assignment, no_doctor: the queue has no doctor), QUEUE_CLOSED (reason_code: closed, not_today), ENTRY_ALREADY_CALLED (errors.entry_id), DOCTOR_ALREADY_CALLING (reason_code: other_queue, previous_day; no ids), QUEUE_EMPTY, APPOINTMENT_WINDOW_PROTECTED (reason_code: appointment or hold; errors.blocked_until), or CONCURRENT_MODIFICATION (retry with a NEW key). Call-next never overrides a protected window. Any 4xx answer is replayed for 48 hours for the same key, so send a NEW Idempotency-Key for each attempt. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueOperations.call": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CallWalkInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the entry is not WAITING; errors.status), NOT_NEXT_IN_ORDER, DOCTOR_NOT_AVAILABLE (reason_code: on_break, unavailable, not_checked_in, checked_out, doctor_not_active, location_not_active, no_assignment, no_doctor), QUEUE_CLOSED (reason_code: closed, not_today), ENTRY_ALREADY_CALLED (errors.entry_id), DOCTOR_ALREADY_CALLING (reason_code: other_queue, previous_day; no ids), APPOINTMENT_WINDOW_PROTECTED (reason_code: appointment or hold; errors.blocked_until; a triaged patient can pass it with override_reason_code), or CONCURRENT_MODIFICATION (retry with a NEW key). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueOperations.recall": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the entry is not CALLED; errors.status), QUEUE_CLOSED (reason_code: closed or not_today), RECALL_LIMIT_REACHED (nothing changes by itself afterwards), or CONCURRENT_MODIFICATION (retry with a NEW key). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueOperations.skip": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION: only a CALLED entry can be skipped (errors.status), or CONCURRENT_MODIFICATION (retry with a NEW key). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueOperations.noShow": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION: a SKIPPED entry, or a CALLED one once the recall limit is reached (errors.status), or CONCURRENT_MODIFICATION (retry with a NEW key). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueOperations.returnToQueue": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the entry is not SKIPPED; errors.status), QUEUE_CLOSED (reason_code: closed or not_today), ENTRY_ALREADY_LIVE (errors.entry_id), or CONCURRENT_MODIFICATION (retry with a NEW key). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueOperations.priority": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePriorityRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION: only a WAITING or SKIPPED entry of a guest whose data was not purged can be given a new priority (errors.status), QUEUE_CLOSED (reason_code: closed or not_today), or CONCURRENT_MODIFICATION (retry with a NEW key). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "authentication.registration": {
         parameters: {
             query?: never;
@@ -9165,7 +9838,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION: only a REGISTERED or WAITING entry can be cancelled (errors.status is its current status), or CONCURRENT_MODIFICATION (retry). */
+            /** @description INVALID_STATE_TRANSITION: only a REGISTERED, WAITING or SKIPPED entry can be cancelled (errors.status is its current status), or CONCURRENT_MODIFICATION (retry). */
             409: {
                 headers: {
                     [name: string]: unknown;
