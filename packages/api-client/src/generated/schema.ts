@@ -794,6 +794,156 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consultations/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a walk-in consultation
+         * @description Only the consultation's own doctor may start it (403 otherwise; 404 for anyone with no standing). The doctor must be checked in at this
+         *     location (IN, not on break or unavailable). The entry must be CALLED, the queue today's, and the assignment active. Starting grants the
+         *     patient's care relationship to the doctor, for the rest of the visit's local day plus the configured days. A guest gets no grant.
+         *     Errors: 409 DOCTOR_NOT_AVAILABLE (reason_code checked_out, on_break, unavailable, not_checked_in, no_assignment, doctor_not_active or
+         *     location_not_active), QUEUE_CLOSED (reason_code closed or not_today), INVALID_STATE_TRANSITION (errors.status), ACTIVE_CONSULTATION
+         *     (another consultation of this doctor is running), CONCURRENT_MODIFICATION (retry with a NEW key). A doctor's own patient profile is
+         *     refused with 403.
+         */
+        post: operations["consultationLifecycle.start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultations/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a walk-in consultation
+         * @description Only the consultation's own doctor may end it. Ending never depends on presence: the doctor may end while on break or unavailable. The
+         *     duration is recorded in whole seconds and the care relationship is kept until its access window closes.
+         *     Errors: 409 INVALID_STATE_TRANSITION (errors.status), CONCURRENT_MODIFICATION (retry with a NEW key).
+         */
+        post: operations["consultationLifecycle.end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultations/{id}/interrupt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Interrupt a running walk-in consultation (IN_PROGRESS to INTERRUPTED). Only the consultation's own doctor, with consultations.end.
+         *     Never refused on presence. The entry stays IN_CONSULTATION, the care relationship is untouched, and the doctor is not BUSY while
+         *     interrupted. A repeat answers 200 with no write.
+         *     Errors: 409 INVALID_STATE_TRANSITION (errors.status), CONCURRENT_MODIFICATION (retry with a NEW key)
+         */
+        post: operations["consultationLifecycle.interrupt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultations/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume an interrupted walk-in consultation (INTERRUPTED to IN_PROGRESS). Only the consultation's own doctor, with consultations.start.
+         *     The doctor must be stored IN at this location, and no other consultation of the doctor may be IN_PROGRESS. A repeat answers 200.
+         *     Errors: 409 DOCTOR_NOT_AVAILABLE (reason_code: checked_out, on_break, unavailable or not_checked_in), ACTIVE_CONSULTATION,
+         *     INVALID_STATE_TRANSITION (errors.status), CONCURRENT_MODIFICATION (retry with a NEW key)
+         */
+        post: operations["consultationLifecycle.resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete a walk-in: end the consultation of this queue entry
+         * @description The same rules as end. `id` is the walk-in entry (not the consultation), so the client does not need the consultation id.
+         *     Errors: 404 when no consultation exists for the entry or the caller has no standing; 403 for a caller who may see it but not end it.
+         */
+        post: operations["consultationLifecycle.complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List consultations the caller may read, newest first, 20 per page (cursor).
+         *     Filters: status, clinic_location_id, from and to (UTC instants on the creation time; to is exclusive)
+         */
+        get: operations["consultationRead.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consultations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One consultation, in the view the caller's standing gives. 404 with no standing; 403 when the permission is missing */
+        get: operations["consultationRead.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/contact/otp": {
         parameters: {
             query?: never;
@@ -2490,6 +2640,41 @@ export interface components {
         ConfirmSpecialtiesRequest: {
             specialty_ids: string[];
         };
+        /** ConsultationResource */
+        ConsultationResource: {
+            id: string;
+            /** @enum {string} */
+            status: "SCHEDULED" | "WAITING_ROOM" | "IN_PROGRESS" | "INTERRUPTED" | "COMPLETED" | "CANCELLED";
+            consultation_type: string;
+            clinic_location_id: string | null;
+            doctor_profile_id: string;
+            started_at: string | null;
+            ended_at: string | null;
+            duration_seconds: number | null;
+            walkin_queue_entry_id: string | null;
+            appointment_id: string | null;
+            patient_profile_id: string | null;
+            /** @description The roles of the people in the consultation, never their names. Loaded by the caller; empty when not loaded. */
+            participant_roles: unknown[];
+        } | {
+            id: string;
+            /** @enum {string} */
+            status: "SCHEDULED" | "WAITING_ROOM" | "IN_PROGRESS" | "INTERRUPTED" | "COMPLETED" | "CANCELLED";
+            consultation_type: string;
+            clinic_location_id: string | null;
+            doctor_profile_id: string;
+            started_at: string | null;
+            ended_at: string | null;
+            duration_seconds: number | null;
+            walkin_queue_entry_id: string | null;
+            appointment_id: string | null;
+        };
+        /**
+         * ConsultationStatus
+         * @description Consultation lifecycle (database-schema.md §10).
+         * @enum {string}
+         */
+        ConsultationStatus: "SCHEDULED" | "WAITING_ROOM" | "IN_PROGRESS" | "INTERRUPTED" | "COMPLETED" | "CANCELLED";
         /**
          * ConsultationType
          * @enum {string}
@@ -3028,6 +3213,8 @@ export interface components {
         PresenceStateResource: {
             /** @description The stored status: IN, ON_BREAK or TEMPORARILY_UNAVAILABLE while a session is open, otherwise NOT_CHECKED_IN. */
             status: string | "NOT_CHECKED_IN";
+            /** @description The status a patient would see: BUSY while the stored IN doctor has a consultation in progress (derived, never stored). */
+            effective_status: string;
             /** @description Null when there is no open session. */
             session_id: string | null;
             clinic_location_id: string | null;
@@ -3847,6 +4034,8 @@ export interface components {
                 wait_status: "NOT_AVAILABLE_YET" | "ESTIMATED" | "UNKNOWN";
                 basis: unknown[];
             } | null;
+            /** @description The consultation of this entry while it is CALLED or IN_CONSULTATION; null otherwise. Staff and doctor views only. */
+            consultation_id: string | null;
             guest_phone: string | null;
             priority_note: string | null;
         } | {
@@ -5918,6 +6107,521 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "consultationLifecycle.start": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ConsultationResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the caller can see the consultation but may not start or end it (only its own doctor may). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description NOT_FOUND: no such consultation, or the caller has no standing at it (its existence is not revealed). For complete: no consultation exists for this entry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description DOCTOR_NOT_AVAILABLE (reason_code: checked_out, on_break, unavailable, not_checked_in, no_assignment, doctor_not_active or location_not_active: the doctor is not stored IN at this location, or the doctor or location is not active), QUEUE_CLOSED (reason_code: closed or not_today), INVALID_STATE_TRANSITION (errors.status: the consultation or the entry is not in a state that allows the start), ACTIVE_CONSULTATION (the doctor already has a consultation in progress), or CONCURRENT_MODIFICATION (retry with a NEW key). A repeat of a start that already happened is a 200, not a 409. A doctor's own patient profile is refused with 403. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "consultationLifecycle.end": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ConsultationResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the caller can see the consultation but may not start or end it (only its own doctor may). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description NOT_FOUND: no such consultation, or the caller has no standing at it (its existence is not revealed). For complete: no consultation exists for this entry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the consultation is not IN_PROGRESS or INTERRUPTED; errors.status), or CONCURRENT_MODIFICATION (retry with a NEW key). Ending never refuses on presence. A repeat of an end that already happened is a 200, not a 409. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "consultationLifecycle.interrupt": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ConsultationResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the caller can see the consultation but may not start or end it (only its own doctor may). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description NOT_FOUND: no such consultation, or the caller has no standing at it (its existence is not revealed). For complete: no consultation exists for this entry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the consultation is not IN_PROGRESS; errors.status), or CONCURRENT_MODIFICATION (retry with a NEW key). Never refused on presence. A repeat is a 200. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "consultationLifecycle.resume": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ConsultationResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the caller can see the consultation but may not start or end it (only its own doctor may). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description NOT_FOUND: no such consultation, or the caller has no standing at it (its existence is not revealed). For complete: no consultation exists for this entry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description DOCTOR_NOT_AVAILABLE (reason_code: checked_out, on_break, unavailable or not_checked_in: the doctor is not stored IN at this location; no_assignment, doctor_not_active or location_not_active: the doctor is no longer assigned, or the doctor or location is no longer active), QUEUE_CLOSED (reason_code: not_today: the walk-in queue is not today's), ACTIVE_CONSULTATION (another consultation of the doctor is in progress), INVALID_STATE_TRANSITION (errors.status), or CONCURRENT_MODIFICATION (retry with a NEW key). A repeat is a 200. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "consultationLifecycle.complete": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ConsultationResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the caller can see the consultation but may not start or end it (only its own doctor may). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description NOT_FOUND: no such consultation, or the caller has no standing at it (its existence is not revealed). For complete: no consultation exists for this entry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the consultation of this entry is not IN_PROGRESS or INTERRUPTED; errors.status), or CONCURRENT_MODIFICATION (retry with a NEW key). The same rules as the consultation end. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "consultationRead.index": {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ConsultationStatus"] | null;
+                clinic_location_id?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: unknown[][];
+                        meta: string | {
+                            per_page: number;
+                            next_cursor: string | null;
+                            previous_cursor: string | null;
+                        };
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example You do not have access to consultations.
+                         */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "consultationRead.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ConsultationResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example You do not have access to consultations.
+                         */
+                        message: string;
+                    };
+                };
+            };
+            /** @description NOT_FOUND: no such consultation, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "contactChange.requestCode": {
         parameters: {
             query?: never;
@@ -7445,7 +8149,7 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            /** @description ACTIVE_CONSULTATION: a consultation is in progress; end it first (errors carry no ids). INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -7549,7 +8253,7 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            /** @description ACTIVE_CONSULTATION: a consultation is in progress; end it first (errors carry no ids). INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
             409: {
                 headers: {
                     [name: string]: unknown;
