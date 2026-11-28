@@ -876,8 +876,9 @@ export interface paths {
         /**
          * Resume an interrupted walk-in consultation (INTERRUPTED to IN_PROGRESS). Only the consultation's own doctor, with consultations.start.
          *     The doctor must be stored IN at this location, and no other consultation of the doctor may be IN_PROGRESS. A repeat answers 200.
-         *     Errors: 409 DOCTOR_NOT_AVAILABLE (reason_code: checked_out, on_break, unavailable or not_checked_in), ACTIVE_CONSULTATION,
-         *     INVALID_STATE_TRANSITION (errors.status), CONCURRENT_MODIFICATION (retry with a NEW key)
+         *     Errors: 409 DOCTOR_NOT_AVAILABLE (reason_code: checked_out, on_break, unavailable, not_checked_in, no_assignment, doctor_not_active or
+         *     location_not_active), QUEUE_CLOSED
+         *     (reason_code: not_today), ACTIVE_CONSULTATION, INVALID_STATE_TRANSITION (errors.status), CONCURRENT_MODIFICATION (retry with a NEW key)
          */
         post: operations["consultationLifecycle.resume"];
         delete?: never;
@@ -1417,6 +1418,24 @@ export interface paths {
         patch: operations["myServices.update"];
         trace?: never;
     };
+    "/notifications/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the PUSH switches. A group with no stored row is on */
+        get: operations["notificationPreferences.index"];
+        /** Replace the PUSH switches. Repeating the same body changes nothing. In-app notices are unaffected */
+        put: operations["notificationPreferences.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/otp": {
         parameters: {
             query?: never;
@@ -1490,6 +1509,26 @@ export interface paths {
         };
         /** Your own presence: the open session, or NOT_CHECKED_IN */
         get: operations["presence.me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/check-out/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check-out preview (increment 5.8, D-I): what a check-out would find. Advisory, no lock, nothing changed. The caller needs
+         *     presence.check_out (for yourself) or presence.manage at the location (for someone else)
+         */
+        get: operations["presence.checkOutPreview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1583,6 +1622,27 @@ export interface paths {
         put?: never;
         /** Become available again. Only from TEMPORARILY_UNAVAILABLE (409 otherwise; already IN: 200, unchanged) */
         post: operations["presence.markAvailable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presence/check-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check out of a clinic location (increment 5.8, D-J). Refused with 409 ACTIVE_CONSULTATION while a consultation is in progress or interrupted,
+         *     or a walk-in is called (`reason_code` says which). Never cancels an appointment; a walk-in entry is held or cancelled as the
+         *     `walkin_disposition` says. No Idempotency-Key: the open-session index and the state guard make a repeat a 409 `not_checked_in`
+         */
+        post: operations["presence.checkOut"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1719,6 +1779,55 @@ export interface paths {
         put?: never;
         /** Reopen a paused queue. PAUSED only (409 otherwise; a closed queue stays closed). Needs `walkins.manage_queue` at the location */
         post: operations["queueControl.open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/queues/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a queue for the day
+         * @description Needs `walkins.manage_queue` at the location (staff, or the queue's own doctor). Body `dispositions`: one item per live entry (REGISTERED,
+         *     WAITING or SKIPPED), each `{entry_id, action}` with action CANCEL_WITH_NOTICE (a patient is told in the app) or TOLD_IN_PERSON (staff told
+         *     them; a guest must use this). A CALLED or IN_CONSULTATION entry blocks the close. The queue is CLOSED for good: no walk-ins that day.
+         *     `409` codes: INVALID_STATE_TRANSITION (reason_code doctor_checked_in: the doctor is checked in here; or errors.status: the queue is already CLOSED),
+         *     ACTIVE_CONSULTATION (reason_code called or in_progress, errors.entry_id), CONCURRENT_MODIFICATION (retry with a NEW key). `422` lists the
+         *     entry ids that lack a disposition, or are not live, under errors.dispositions.
+         */
+        post: operations["queueControl.close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walk-ins/{id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transfer one live entry to another queue at the same location and day
+         * @description Staff only (`walkins.manage_queue` at the location; a doctor may not move a patient between queues). The entry keeps its id, status and
+         *     arrival order and takes the next number of the target queue. The target must be OPEN, its doctor must be checked in or not yet in (not out),
+         *     and the patient must not already hold a place there. `409` codes: INVALID_STATE_TRANSITION (the entry is not REGISTERED or WAITING; errors.status),
+         *     DOCTOR_NOT_AVAILABLE (reason_code checked_out), QUEUE_CLOSED (reason_code paused, closed or cutoff_passed), ENTRY_ALREADY_LIVE (errors.entry_id),
+         *     CAPACITY_OVERRIDE_REQUIRED (send over_capacity_ack), CONCURRENT_MODIFICATION (retry with a NEW key). `404` for a target the caller cannot see.
+         */
+        post: operations["queueControl.transfer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2477,18 +2586,15 @@ export interface components {
             override_reason_code?: components["schemas"]["PriorityReason"] | null;
         };
         /**
-         * CancelReason
-         * @description Why an entry was cancelled (decision 52). Only the code is ever stored on the event, audit row or notice.
-         * @enum {string}
-         */
-        CancelReason: "PATIENT_REQUEST" | "PATIENT_LEFT" | "DUPLICATE_ENTRY" | "OTHER";
-        /**
          * CancelWalkInRequest
          * @description POST /walk-ins/{id}/cancel
          */
         CancelWalkInRequest: {
-            /** @description PATIENT_REQUEST, PATIENT_LEFT, DUPLICATE_ENTRY or OTHER. A fixed code: no free text. */
-            reason_code: components["schemas"]["CancelReason"];
+            /**
+             * @description PATIENT_REQUEST, PATIENT_LEFT, DUPLICATE_ENTRY or OTHER. A fixed code: no free text. The system-only codes are never accepted here.
+             * @enum {string}
+             */
+            reason_code: "PATIENT_REQUEST" | "PATIENT_LEFT" | "DUPLICATE_ENTRY" | "OTHER";
             /** @description Staff cancelling a guest's entry must confirm they told the patient in person. */
             patient_informed_in_person?: boolean;
         };
@@ -2529,6 +2635,116 @@ export interface components {
              */
             clinic_location_id: string;
             reason?: components["schemas"]["PresenceReason"] | null;
+        };
+        /**
+         * CheckOutDisposition
+         * @description What happens to a doctor's live walk-in entries when the doctor checks out (increment 5.8, D-D). Required: the system never picks one for a person. HOLD keeps every place; NOTIFY_AND_CANCEL cancels them with the notice.
+         * @enum {string}
+         */
+        CheckOutDisposition: "HOLD_FOR_REASSIGNMENT" | "NOTIFY_AND_CANCEL";
+        /** CheckOutPreviewResource */
+        CheckOutPreviewResource: {
+            /** @description The open session at the location, or null when there is none. */
+            session: {
+                id: string;
+                status: string;
+                version: number;
+            } | null;
+            /** @description What would refuse the check-out. Empty when nothing blocks it. */
+            blocking: {
+                code: string;
+                reason_code: string;
+            }[];
+            /** @description The doctor's unfinished consultation. The id is null unless the reader may see that consultation. */
+            active_consultation: {
+                id: string | null;
+                status: string;
+            } | null;
+            /** @description The doctor's own queues for the day. */
+            queues: {
+                queue_id: string;
+                status: string;
+                counts: {
+                    registered: number;
+                    waiting: number;
+                    called: number;
+                    skipped: number;
+                    in_consultation: number;
+                };
+                guest_count: number;
+            }[];
+            /** @description CALLED or IN_CONSULTATION entry ids. Null unless the reader may see walk-in entries at the location. */
+            called_entry_ids: string[] | null;
+            /** @description Entry ids a disposition would decide. Null unless the reader may see walk-in entries at the location. */
+            live_entry_ids: string[] | null;
+            /** @description The day's live appointments: ids and start times only. */
+            appointments: {
+                count: number;
+                items: {
+                    id: string;
+                    starts_at: string;
+                }[];
+            };
+        };
+        /**
+         * CheckOutReason
+         * @description Why a doctor checked out (increment 5.8). A fixed code, never free text. Matches the database CHECK on doctor_presence_sessions.checkout_reason (a unit test keeps them equal).
+         * @enum {string}
+         */
+        CheckOutReason: "END_OF_SHIFT" | "EMERGENCY" | "PERSONAL" | "CLINIC_CLOSED" | "OTHER";
+        /**
+         * CheckOutRequest
+         * @description POST /presence/check-out. The coarse gate is presence.check_out (the doctor) or presence.manage (staff); PresenceAccess decides the rest.
+         *     The walk-in disposition is required: the system never picks one for a person (D-D). The ids (doctor_id, clinic_location_id) are the
+         *     presence module's shared ones (PresenceActionRequest, api-specification §2.7).
+         */
+        CheckOutRequest: {
+            /**
+             * Format: uuid
+             * @description Clinic staff only: the doctor to act for. Omit to change your own presence.
+             */
+            doctor_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Required when acting for another doctor: the location where you hold presence rights.
+             */
+            clinic_location_id?: string | null;
+            /** @description Why, as a fixed code (END_OF_SHIFT, EMERGENCY, PERSONAL, CLINIC_CLOSED, OTHER). No free text. */
+            reason: components["schemas"]["CheckOutReason"];
+            /** @description What happens to the walk-in entries still waiting: HOLD_FOR_REASSIGNMENT keeps them, NOTIFY_AND_CANCEL cancels them with notice. */
+            walkin_disposition: components["schemas"]["CheckOutDisposition"];
+            /** @description Required (true) when NOTIFY_AND_CANCEL cancels a guest entry: the guest was told in person, since a guest has no notification. */
+            guests_informed_in_person?: boolean;
+        };
+        /** CheckOutResultResource */
+        CheckOutResultResource: {
+            /**
+             * @description Always OUT: the session is closed by the check-out.
+             * @constant
+             */
+            status: "OUT";
+            /**
+             * @description The same as status: a closed session has no derived BUSY.
+             * @constant
+             */
+            effective_status: "OUT";
+            /** @description The session that was closed. */
+            session_id: string;
+            clinic_location_id: string;
+            /** @description UTC. */
+            checked_in_at: string;
+            /** @description UTC. Always null after a check-out (a break ends with the session). */
+            break_expected_end_at: string | null;
+            /** @description Increases with every change. */
+            version: number;
+            /** @description Counts of what the check-out did. */
+            result: {
+                queues_paused: number;
+                entries_held: number;
+                entries_cancelled: number;
+                appointments_flagged: number;
+                tasks_created: number;
+            };
         };
         /** ClinicManagementResource */
         ClinicManagementResource: {
@@ -2622,6 +2838,24 @@ export interface components {
             };
             location_count: number;
             cities: unknown[];
+        };
+        /**
+         * CloseAction
+         * @description What staff record for each live entry when a queue is closed (increment 5.8, D-F). CANCEL_WITH_NOTICE cancels the entry and sends the generic notice (patients only: a guest has no channel). TOLD_IN_PERSON cancels it after staff have told the patient in person; no notice is sent.
+         * @enum {string}
+         */
+        CloseAction: "CANCEL_WITH_NOTICE" | "TOLD_IN_PERSON";
+        /**
+         * CloseQueueRequest
+         * @description POST /walk-ins/queues/{id}/close: one disposition per live entry of the queue.
+         */
+        CloseQueueRequest: {
+            /** @description One entry per item; every live entry (REGISTERED, WAITING, SKIPPED) must appear exactly once. Checked against the locked queue. */
+            dispositions: {
+                /** Format: uuid */
+                entry_id: string;
+                action: components["schemas"]["CloseAction"];
+            }[];
         };
         /**
          * ConfirmContactChangeRequest
@@ -3020,7 +3254,7 @@ export interface components {
              * @description Optional finer reason inside the code, for example `no_assignment` or `open_session`. Absent when the code says it all.
              * @enum {string}
              */
-            reason_code?: "doctor_not_active" | "location_not_active" | "no_assignment" | "no_service_mode" | "clinic_closed" | "closed_holiday" | "outside_hours" | "open_session" | "not_checked_in" | "invalid_transition" | "change_in_progress" | "doctor_not_active" | "location_not_active" | "remote_registration_off" | "mobile_not_verified" | "doctor_unavailable" | "doctor_checked_out" | "no_walkin_hours_today" | "paused" | "closed" | "cutoff_passed" | "clinic_closed_today" | "live_entries_per_patient" | "patients_per_account_per_day" | "on_break" | "unavailable" | "checked_out" | "not_today" | "appointment" | "hold" | "no_doctor" | "other_queue" | "previous_day";
+            reason_code?: "doctor_not_active" | "location_not_active" | "no_assignment" | "no_service_mode" | "clinic_closed" | "closed_holiday" | "outside_hours" | "open_session" | "not_checked_in" | "invalid_transition" | "change_in_progress" | "in_progress" | "interrupted" | "called" | "doctor_not_active" | "location_not_active" | "remote_registration_off" | "mobile_not_verified" | "doctor_unavailable" | "doctor_checked_out" | "no_walkin_hours_today" | "paused" | "closed" | "cutoff_passed" | "clinic_closed_today" | "live_entries_per_patient" | "patients_per_account_per_day" | "on_break" | "unavailable" | "checked_out" | "not_today" | "appointment" | "hold" | "no_doctor" | "other_queue" | "previous_day" | "doctor_checked_in";
             request_id: string | null;
         };
         /** ForgotPasswordRequest */
@@ -3372,6 +3606,14 @@ export interface components {
             status: string;
             /** @description Where the doctor is checked in; null when NOT_IN. */
             clinic_location_id: string | null;
+        };
+        /** PushPreferencesResource */
+        PushPreferencesResource: {
+            push: {
+                walk_in_doctor_checked_out: boolean;
+                walk_in_cancelled: boolean;
+                walk_in_transferred: boolean;
+            };
         };
         /** QueueBoardResource */
         QueueBoardResource: {
@@ -3741,6 +3983,16 @@ export interface components {
             reason: string;
         };
         /**
+         * TransferEntryRequest
+         * @description POST /walk-ins/{id}/transfer: the target queue, and the staff acknowledgement of a capacity override (B9).
+         */
+        TransferEntryRequest: {
+            /** Format: uuid */
+            walkin_queue_id: string;
+            /** @description Needed only when the target is at its capacity; without it the transfer is refused with CAPACITY_OVERRIDE_REQUIRED. */
+            over_capacity_ack?: boolean;
+        };
+        /**
          * UpdateClinicRequest
          * @description PATCH /clinics/{id}: only the fields sent change.
          */
@@ -3876,6 +4128,17 @@ export interface components {
             } | null;
         };
         /**
+         * UpdatePushPreferencesRequest
+         * @description PUT /notifications/preferences: every known PUSH group, each on or off. Unknown groups are refused.
+         */
+        UpdatePushPreferencesRequest: {
+            push: {
+                walk_in_doctor_checked_out: boolean;
+                walk_in_cancelled: boolean;
+                walk_in_transferred: boolean;
+            };
+        };
+        /**
          * UpdateSettingRequest
          * @description PUT /admin/settings/{key}: any JSON value except null, and a reason.
          */
@@ -3942,6 +4205,8 @@ export interface components {
             capacity_mode?: components["schemas"]["CapacityMode"];
             /** @description How many times a called patient may be recalled before staff may mark them a no-show. 1 to 10 (WalkInPolicy::MAX_RECALL_LIMIT), default 2. */
             recall_limit?: number;
+            /** @description Minutes after the latest of the clinic's closing, the doctor's last shift end and the doctor's last booked end that day before an open session is checked out automatically. 0 to 720, default 60. */
+            auto_checkout_grace_minutes?: number;
         };
         /**
          * UploadCredentialRequest
@@ -4123,6 +4388,8 @@ export interface components {
             capacity_mode: string;
             /** @description How many times a called patient may be recalled before staff may mark a no-show. */
             recall_limit: number;
+            /** @description Minutes after closing before an open session of this doctor here is checked out automatically (0 to 720). */
+            auto_checkout_grace_minutes: number;
             /** @description The capacity today's schedule gives this doctor here (the sum over today's walk-in shifts). With UNLIMITED it is informational: the queue has no cap. */
             derived_capacity_today: number;
             /** @description The location's local date the capacity is for (Y-m-d). */
@@ -7829,6 +8096,103 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "notificationPreferences.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PushPreferencesResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the account has a privileged role and has not completed multi-factor sign-in (mfa.satisfied). Set up MFA, then sign in again. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "notificationPreferences.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePushPreferencesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PushPreferencesResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description FORBIDDEN: the account has a privileged role and has not completed multi-factor sign-in (mfa.satisfied). Set up MFA, then sign in again. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "otp.request": {
         parameters: {
             query?: never;
@@ -8048,6 +8412,50 @@ export interface operations {
             };
         };
     };
+    "presence.checkOutPreview": {
+        parameters: {
+            query?: {
+                /** @description Clinic staff only: the doctor to act for. Omit to change your own presence. */
+                doctor_id?: string | null;
+                /** @description Required when acting for another doctor: the location where you hold presence rights. */
+                clinic_location_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["CheckOutPreviewResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "presence.checkIn": {
         parameters: {
             query?: never;
@@ -8149,7 +8557,7 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            /** @description ACTIVE_CONSULTATION: a consultation is in progress; end it first (errors carry no ids). INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            /** @description ACTIVE_CONSULTATION (reason_code `in_progress` or `called`): a consultation is in progress, or a walk-in patient is called to this doctor; end it, or start, skip or mark that patient no-show first (no ids). INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8306,6 +8714,58 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             /** @description INVALID_STATE_TRANSITION: the move is not allowed from the current status (reason_code `not_checked_in` or `invalid_transition`; errors.status is the current status), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. A repeat of the state already reached is a 200, not a 409. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "presence.checkOut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckOutRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["CheckOutResultResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description ACTIVE_CONSULTATION (reason_code `in_progress`, `interrupted` or `called`): a consultation is in progress or interrupted, or a walk-in patient is called; end it, or start, skip or mark that patient no-show first (no ids). INVALID_STATE_TRANSITION, reason_code `not_checked_in`: no open session at this location (a retry after a success lands here: refetch GET /presence/me), or `change_in_progress` (CONCURRENT_MODIFICATION): retry. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8689,6 +9149,156 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueControl.close": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseQueueRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["QueueResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (reason_code doctor_checked_in while the doctor is checked in at the location; errors.status when the queue is already CLOSED), ACTIVE_CONSULTATION (reason_code called or in_progress, errors.entry_id: a CALLED or IN_CONSULTATION entry), or CONCURRENT_MODIFICATION (retry with a NEW key). 422 (errors.dispositions) when a live entry has no disposition, or a guest is given CANCEL_WITH_NOTICE. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queueControl.transfer": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID or ULID for each distinct request; the same one when retrying it. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferEntryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["WalkInEntryResource"];
+                        meta: string;
+                        message: null;
+                    };
+                };
+            };
+            /** @description BAD_REQUEST: the Idempotency-Key header (a UUID or ULID) is missing. Reuse a key only to retry the same request; any 4xx answer is replayed for 48 hours. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description NOT_FOUND: no such record, or the caller has no standing at it (its existence is not revealed). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION (the entry is not REGISTERED or WAITING; errors.status), DOCTOR_NOT_AVAILABLE (reason_code checked_out, no_assignment or no_doctor: the target doctor), REGISTRATION_NOT_ALLOWED (reason_code: doctor_not_active, location_not_active, no_walkin_hours_today, doctor_unavailable or doctor_checked_out: the target is not taking walk-ins), QUEUE_CLOSED (reason_code paused, closed, cutoff_passed, clinic_closed_today or not_today: the target is not open today), ENTRY_ALREADY_LIVE (errors.entry_id: the patient already holds a place in the target), CAPACITY_OVERRIDE_REQUIRED (send over_capacity_ack), or CONCURRENT_MODIFICATION (retry with a NEW key). A target the caller cannot see is 404. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationException"];
             /** @description Too many requests */
             429: {
                 headers: {
